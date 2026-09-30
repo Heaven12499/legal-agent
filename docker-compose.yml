@@ -1,17 +1,98 @@
 services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: legal_rag
+      POSTGRES_USER: legal_rag
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 配置 POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U legal_rag -d legal_rag"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: legal_rag
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?请在 .env 配置 RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    ports:
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
   app:
     build: .
     ports:
       - "${APP_PORT:-8000}:8000"
-    env_file:
-      - .env
+    env_file: [.env]
+    environment: &app-env
+      APP_ENV: production
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: legal_rag
+      DB_USER: legal_rag
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: legal_rag
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      REDIS_URL: redis://redis:6379/0
+      RUN_MIGRATIONS: "1"
     volumes:
-      # 会话库、初始用户和 JWT 密钥在重建容器后仍保留。
       - rag-data:/app/data
-      # 首次下载的 embedding 模型持久化，后续启动无需再次下载。
       - rag-models:/app/models
+    depends_on:
+      postgres: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: ["celery", "-A", "backend.app.worker.celery_app:celery_app", "worker", "--loglevel=INFO", "--pool=threads", "--concurrency=${WORKER_CONCURRENCY:-2}"]
+    env_file: [.env]
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "0"
+    volumes:
+      - rag-data:/app/data
+      - rag-models:/app/models
+    expose: ["9101"]
+    depends_on:
+      app: {condition: service_healthy}
     restart: unless-stopped
 
 volumes:
+  postgres-data:
+  rabbitmq-data:
+  redis-data:
   rag-data:
   rag-models:

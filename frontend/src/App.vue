@@ -5,7 +5,7 @@ import MessageBubble from "./components/MessageBubble.vue";
 import ConfirmDialog from "./components/ConfirmDialog.vue";
 import Welcome from "./components/Welcome.vue";
 import AuthForm from "./components/AuthForm.vue";
-import { sendChat, listSessions, getHistory, removeSession, uploadFile, truncateHistory, regenerateChat, me, getToken, setToken, clearToken } from "./api.js";
+import { sendReview, listSessions, getHistory, removeSession, uploadFile, truncateHistory, regenerateChat, me, getToken, setToken, clearToken } from "./api.js";
 
 const user = ref(null); // 登录用户；null = 未登录，显示登录页
 const sessionId = ref(crypto.randomUUID());
@@ -138,7 +138,7 @@ async function sendAndAppend(msg, contract) {
   sending.value = true;
   try {
     const contractName = contract && uploadedFile.value?.text ? uploadedFile.value.name : undefined;
-    const data = await sendChat(msg, sessionId.value, contract, contractName);
+    const data = await sendReview(msg, sessionId.value, contract, contractName);
     userMsg.id = data.user_id;
     messages.value.push({
       id: data.assistant_id,

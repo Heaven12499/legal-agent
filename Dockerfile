@@ -29,7 +29,11 @@ COPY . ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist
 
 RUN chmod +x /app/docker/entrypoint.sh \
-    && mkdir -p /app/data /app/models
+    && mkdir -p /app/data /app/models \
+    && useradd --create-home --uid 10001 appuser \
+    && chown -R appuser:appuser /app
+
+USER appuser
 
 EXPOSE 8000
 

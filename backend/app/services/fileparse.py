@@ -5,6 +5,8 @@
 只做"提取文本"一件事，不做任何审查逻辑——提取结果由前端填回输入框，
 再走现有 /api/chat 复用同一个 agent。红线：只读不写，不执行宏，不信任内容。
 """
+import os
+import zipfile
 from pathlib import Path
 
 # 允许的扩展名（小写）→ 提取函数
@@ -32,6 +34,15 @@ def _from_docx(data: bytes) -> str:
     """docx = zip 容器，python-docx 只读解包；宏（vba）不执行，天然安全。"""
     import io
 
+    # docx 是 zip：先限制解压后总大小和文件数量，拦截 zip bomb。
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        entries = archive.infolist()
+        if len(entries) > int(os.environ.get("MAX_DOCX_ENTRIES", "2000")):
+            raise ValueError("DOCX 内部文件数量异常")
+        expanded = sum(item.file_size for item in entries)
+        if expanded > int(os.environ.get("MAX_DOCX_EXPANDED_BYTES", str(50 * 1024 * 1024))):
+            raise ValueError("DOCX 解压后内容过大")
+
     from docx import Document
 
     doc = Document(io.BytesIO(data))
@@ -52,6 +63,9 @@ def _from_pdf(data: bytes) -> str:
     from pypdf import PdfReader
 
     reader = PdfReader(io.BytesIO(data))
+    max_pages = int(os.environ.get("MAX_PDF_PAGES", "500"))
+    if len(reader.pages) > max_pages:
+        raise ValueError(f"PDF 页数不能超过 {max_pages} 页")
     pages = []
     for page in reader.pages:
         pages.append(page.extract_text() or "")

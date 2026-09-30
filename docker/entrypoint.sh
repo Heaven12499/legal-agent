@@ -1,6 +1,11 @@
 #!/bin/sh
 set -eu
 
+if [ "${RUN_MIGRATIONS:-0}" = "1" ]; then
+    echo "[bootstrap] 执行数据库迁移..."
+    alembic upgrade head
+fi
+
 MODEL_DIR="models/bge-small-zh-v1.5"
 RERANK_MODEL_DIR="models/bge-reranker-base"
 

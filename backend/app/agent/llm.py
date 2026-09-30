@@ -9,6 +9,8 @@ from pathlib import Path
 
 from openai import OpenAI
 
+from ..infra.observability import LLM_LATENCY, LLM_REQUESTS, LLM_TOKENS
+
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _instance = None
 
@@ -60,11 +62,21 @@ def chat(messages: list, **kw):
     client, model = get_client(), get_model()
     last = None
     for attempt in range(3):
+        started = time.perf_counter()
         try:
-            return client.chat.completions.create(model=model, messages=messages, **kw)
+            response = client.chat.completions.create(model=model, messages=messages, **kw)
+            LLM_REQUESTS.labels(model, "success").inc()
+            usage = getattr(response, "usage", None)
+            if usage:
+                LLM_TOKENS.labels(model, "prompt").inc(getattr(usage, "prompt_tokens", 0) or 0)
+                LLM_TOKENS.labels(model, "completion").inc(getattr(usage, "completion_tokens", 0) or 0)
+            return response
         except Exception as e:  # noqa: BLE001 —— 任意网络/服务异常都该重试
             last = e
+            LLM_REQUESTS.labels(model, "error").inc()
             time.sleep(attempt + 1)
+        finally:
+            LLM_LATENCY.labels(model).observe(time.perf_counter() - started)
     raise last
 
 
