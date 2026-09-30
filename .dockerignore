@@ -2,6 +2,8 @@
 .claude/
 .idea/
 .venv/
+.cache/
+.pytest_cache/
 __pycache__/
 *.py[cod]
 .env
@@ -10,5 +12,6 @@ models/
 frontend/node_modules/
 frontend/dist/
 docs/screenshots/
+*.docx
 *.faiss
 corpus/chunks.json

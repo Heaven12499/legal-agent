@@ -23,12 +23,17 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt ./requirements.txt
-RUN pip install -r requirements.txt
+# PyPI 的 Linux Torch 默认会拉取整套 CUDA 运行时；服务只使用 CPU，
+# 显式安装 CPU wheel，避免镜像无谓膨胀数 GB。
+ARG TORCH_VERSION=2.13.0
+RUN pip install --index-url https://download.pytorch.org/whl/cpu "torch==${TORCH_VERSION}" \
+    && pip install -r requirements.txt
 
 COPY . ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist
 
-RUN chmod +x /app/docker/entrypoint.sh \
+RUN sed -i 's/\r$//' /app/docker/entrypoint.sh \
+    && chmod +x /app/docker/entrypoint.sh \
     && mkdir -p /app/data /app/models \
     && useradd --create-home --uid 10001 appuser \
     && chown -R appuser:appuser /app
