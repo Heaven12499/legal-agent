@@ -26,4 +26,7 @@ with tempfile.TemporaryDirectory() as tmp:
     assert session.get_contract(uid, sid) == ""
     assert session.get_contract_meta(uid, sid) is None
 
+    from backend.app.infra.database import get_engine
+    get_engine().dispose()
+
 print("[OK] 合同附件：普通追问保留，显式移除才清空")

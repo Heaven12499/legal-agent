@@ -30,3 +30,17 @@ pypdf==6.16.2
 # ---- 用户认证（M9：argon2 密码哈希 + JWT 签发/校验）----
 argon2-cffi==25.1.0
 PyJWT==2.13.0
+
+# ---- 生产持久化与迁移 ----
+SQLAlchemy==2.0.43
+alembic==1.16.5
+psycopg[binary]==3.2.10
+
+# ---- 可靠异步任务与分布式限流 ----
+celery==5.5.3
+redis==6.4.0
+
+# ---- 可观测性与接口测试 ----
+prometheus-client==0.22.1
+pytest==8.4.2
+httpx==0.28.1
