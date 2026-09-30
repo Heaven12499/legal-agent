@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-下载 embedding 与 reranker 模型到本地 models/ 目录（可复现：任何环境跑一次即就绪）。
+下载 embedding 模型，并在 RERANK=1 时下载可选 reranker 模型。
 
 单独一个脚本：模型二进制文件不入库。运行时只读本地 models/，
 零网络依赖 —— "运行时可复现"（模型版本和语料一样被钉死）。
@@ -17,9 +17,13 @@ from pathlib import Path
 from huggingface_hub import snapshot_download
 
 ROOT = Path(__file__).resolve().parents[2]
-MODELS = (
-    ("BAAI/bge-small-zh-v1.5", ROOT / "models" / "bge-small-zh-v1.5"),
-    ("BAAI/bge-reranker-base", ROOT / "models" / "bge-reranker-base"),
+EMBEDDING_MODEL = (
+    "BAAI/bge-small-zh-v1.5",
+    ROOT / "models" / "bge-small-zh-v1.5",
+)
+RERANK_MODEL = (
+    "BAAI/bge-reranker-base",
+    ROOT / "models" / "bge-reranker-base",
 )
 
 
@@ -35,7 +39,13 @@ def main() -> None:
     # 默认走镜像；用户显式设过 HF_ENDPOINT 就尊重用户的
     os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 
-    for model_name, target in MODELS:
+    models = [EMBEDDING_MODEL]
+    if os.environ.get("RERANK") == "1":
+        models.append(RERANK_MODEL)
+    else:
+        print("RERANK 未启用，跳过可选 reranker 模型")
+
+    for model_name, target in models:
         if model_ready(target):
             print(f"模型已存在：{target}，跳过")
             continue
