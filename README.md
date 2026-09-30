@@ -14,10 +14,19 @@
 - **混合检索**：结合 bge-small-zh 向量召回与 BM25 词面匹配，通过 RRF 融合结果；可选 Cross-Encoder reranker。
 - **可追溯引用**：每处法律引用必须真实存在于本地语料，且来自本轮检索证据；异常引用会被纠错或明确标警告。
 - **Agent 工具调用**：单智能体自主决定检索、精确查询法条或直接回答，设置最大轮次防止无限循环，并记录完整 trace。
-- **完整 Web 体验**：支持 docx、PDF、TXT 上传，多轮会话、消息修改与重新生成、SQLite 持久化，以及 JWT 多用户隔离。
+- **完整 Web 体验**：支持 docx、PDF、TXT 上传，多轮会话、消息修改与重新生成、PostgreSQL 持久化，以及 JWT 多用户隔离。
+- **可靠长任务**：FastAPI 通过 Transactional Outbox 向 RabbitMQ 发布任务，独立 Celery Worker 以租约和幂等键消费；支持进度查询、自动/人工重试及故障接管。
+- **生产可观测性**：JSON 结构化日志、请求/任务链路 ID、健康与就绪检查、Prometheus 指标和 Redis 分布式限流。
 - **可复现评测**：合成合同用于回归测试，公开合同短条款用于外部验证，两类结果分开报告。
 
 ## 系统流程
+
+~~~text
+Vue 3 → FastAPI ──→ PostgreSQL（会话、任务、Outbox、Trace）
+             │
+             ├──→ Redis（用户/IP 限流）
+             └──→ RabbitMQ → Celery Worker → Agentic RAG → PostgreSQL
+~~~
 
 ~~~text
 合同条款 / 用户问题
@@ -33,7 +42,7 @@
           → 带证据的人工参考结论
 ~~~
 
-检索与生成过程会记录查询改写、工具调用、命中文档和引用校验结果，便于在前端追踪答案依据。
+检索与生成过程会持久化查询改写、工具调用、命中文档和引用校验结果，刷新或重启后仍可在前端追踪答案依据。
 
 ## 评测结果
 
@@ -72,7 +81,8 @@
 
 ~~~powershell
 Copy-Item .env.example .env
-# 编辑 .env，填写 DEEPSEEK_API_KEY、INIT_PASSWORD、JWT_SECRET
+# 编辑 .env，至少填写 DEEPSEEK_API_KEY、INIT_PASSWORD、JWT_SECRET、
+# POSTGRES_PASSWORD 和 RABBITMQ_PASSWORD
 
 docker compose up --build
 ~~~
@@ -82,6 +92,7 @@ docker compose up --build
 ~~~powershell
 docker compose up -d        # 后台启动
 docker compose logs -f app  # 查看启动进度
+docker compose logs -f worker
 docker compose down         # 停止服务，保留数据和模型
 ~~~
 
@@ -106,14 +117,16 @@ npm install
 npm run dev
 ~~~
 
-前端默认运行在 http://127.0.0.1:5173，并将 API 请求代理到 8000 端口。
+前端默认运行在 http://127.0.0.1:5173，并将 API 请求代理到 8000 端口。本地不启动 RabbitMQ/Worker 时仍可使用同步 `/api/chat`；完整异步审查链路建议使用 Compose。
 
 ## 技术栈
 
 | 层 | 技术 |
 |---|---|
 | 前端 | Vue 3、Vite |
-| 后端 | FastAPI、Uvicorn、SQLite |
+| 后端 | FastAPI、Uvicorn、SQLAlchemy、PostgreSQL、Alembic |
+| 异步任务 | RabbitMQ、Celery、Transactional Outbox、任务租约与幂等消费 |
+| 限流与观测 | Redis、Prometheus、JSON Structured Logging |
 | Agent | OpenAI-compatible Function Calling、DeepSeek API |
 | 检索 | FAISS、bge-small-zh-v1.5、BM25、jieba、RRF |
 | 可选精排 | BAAI/bge-reranker-base |
@@ -128,8 +141,10 @@ backend/
     agent/              Agent 循环、工具、提示词与上下文管理
     api/                FastAPI 接口
     core/               分块、向量/BM25 检索、融合与引用校验
-    infra/              认证与会话持久化
+    infra/              SQLAlchemy 模型、认证、限流、任务与可观测性
     services/           文件解析与文档导出
+    worker/             Celery 应用与合同审查消费者
+  migrations/           Alembic 数据库迁移
   scripts/              语料准备、验收与离线评测
 corpus/                 法律原文
 sample_contracts/       合成合同与公开条款评测集
@@ -152,6 +167,11 @@ python -m backend.scripts.verify_retrieval
 python -m backend.scripts.verify_citations
 python -m backend.scripts.verify_session_contract
 python -m backend.scripts.verify_agent_engineering
+python -m backend.scripts.verify_review_jobs
+python -m pytest
+
+# 查看迁移状态
+python -m alembic current
 
 # 公开条款检索评测；添加 --agent 执行真实端到端评测
 python -X utf8 -m backend.scripts.eval_public_clauses
@@ -159,3 +179,5 @@ python -X utf8 -m backend.scripts.eval_public_clauses --agent
 ~~~
 
 系统定位为合同初审辅助工具：检索不到直接依据时明确说明，不使用模型常识补造法条，也不自动替代、修改或签署合同。
+
+运行后可用 `/health` 检查进程存活、`/ready` 检查 PostgreSQL/RabbitMQ/Redis 依赖，Prometheus 指标暴露在 `/metrics`。

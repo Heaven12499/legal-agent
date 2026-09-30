@@ -30,6 +30,30 @@ Content-Type: application/json
   "session_id": "test-session-1"
 }
 
+### 异步提交合同审查（推荐给长文本；立即返回 job_id）
+# @name createReview
+POST {{baseUrl}}/api/reviews
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "message": "请审查这份合同中的风险条款，并为每个结论检索法律依据",
+  "session_id": "review-session-1",
+  "contract": "第一条 甲方逾期付款不承担任何责任。",
+  "contract_name": "采购合同.txt",
+  "max_attempts": 2
+}
+
+> {% client.global.set("review_job_id", response.body.job_id); %}
+
+### 查询异步审查进度/结果
+GET {{baseUrl}}/api/reviews/{{review_job_id}}
+Authorization: Bearer {{auth_token}}
+
+### 仅当任务最终失败时人工重试
+POST {{baseUrl}}/api/reviews/{{review_job_id}}/retry
+Authorization: Bearer {{auth_token}}
+
 ### 继续追问
 POST {{baseUrl}}/api/chat
 Authorization: Bearer {{auth_token}}
