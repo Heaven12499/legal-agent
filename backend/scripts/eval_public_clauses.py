@@ -108,21 +108,38 @@ def parse_risk_decision(answer: str) -> bool | None:
 
 def summarize_risk(rows: list[dict]) -> dict:
     decided = [row for row in rows if row["predicted_risk"] is not None]
+    positive_total = sum(row["gold_risk"] for row in rows)
+    negative_total = len(rows) - positive_total
+    abstained_positive = sum(
+        row["gold_risk"] and row["predicted_risk"] is None for row in rows
+    )
+    abstained_negative = sum(
+        not row["gold_risk"] and row["predicted_risk"] is None for row in rows
+    )
     tp = sum(row["gold_risk"] and row["predicted_risk"] for row in decided)
     fp = sum(not row["gold_risk"] and row["predicted_risk"] for row in decided)
     fn = sum(row["gold_risk"] and not row["predicted_risk"] for row in decided)
     tn = sum(not row["gold_risk"] and not row["predicted_risk"] for row in decided)
     precision = tp / (tp + fp) if tp + fp else 0.0
-    recall = tp / (tp + fn) if tp + fn else 0.0
+    # 协议未解析同样是评测失败：正样本计入召回分母，负样本计入特异度分母。
+    recall = tp / positive_total if positive_total else 0.0
+    specificity = tn / negative_total if negative_total else 0.0
     return {
         "evaluated": len(rows),
         "decided": len(decided),
         "unparseable": len(rows) - len(decided),
+        "protocol_compliance": len(decided) / len(rows) if rows else 0.0,
+        "positive_total": positive_total,
+        "negative_total": negative_total,
+        "abstained_positive": abstained_positive,
+        "abstained_negative": abstained_negative,
         "tp": tp, "fp": fp, "fn": fn, "tn": tn,
         "precision": precision,
         "recall": recall,
+        "specificity": specificity,
+        "false_positive_rate": fp / negative_total if negative_total else 0.0,
         "f1": 2 * precision * recall / (precision + recall) if precision + recall else 0.0,
-        "accuracy": (tp + tn) / len(decided) if decided else 0.0,
+        "accuracy": (tp + tn) / len(rows) if rows else 0.0,
     }
 
 

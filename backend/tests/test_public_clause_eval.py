@@ -21,8 +21,13 @@ def test_summarize_risk_reports_confusion_matrix_and_f1():
     assert summary["evaluated"] == 5
     assert summary["decided"] == 4
     assert summary["unparseable"] == 1
+    assert summary["protocol_compliance"] == 0.8
+    assert summary["abstained_positive"] == 0
+    assert summary["abstained_negative"] == 1
     assert (summary["tp"], summary["fp"], summary["fn"], summary["tn"]) == (1, 1, 1, 1)
     assert summary["precision"] == 0.5
     assert summary["recall"] == 0.5
+    assert summary["specificity"] == 1 / 3
+    assert summary["false_positive_rate"] == 1 / 3
     assert summary["f1"] == 0.5
-    assert summary["accuracy"] == 0.5
+    assert summary["accuracy"] == 0.4
