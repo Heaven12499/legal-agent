@@ -21,10 +21,16 @@ if [ ! -f "$MODEL_DIR/config.json" ] || { [ ! -f "$MODEL_DIR/model.safetensors" 
     python -m backend.scripts.download_model
 fi
 
-# 提前构建 FAISS 索引，避免首次提问等待向量化；已有索引时跳过。
-if [ ! -f corpus/chunks.faiss ]; then
+# FAISS 只作为本地回归/对照后端；pgvector 模式直接把向量同步到数据库。
+if [ "${VECTOR_BACKEND:-faiss}" = "faiss" ] && [ ! -f corpus/chunks.faiss ]; then
     echo "[bootstrap] 构建 FAISS 索引..."
     python -c "from backend.app.core.retriever import get_retriever; get_retriever()"
+fi
+
+# 只由执行迁移的 app 容器同步一次；worker 等 app ready 后启动，避免并发导入。
+if [ "${RUN_MIGRATIONS:-0}" = "1" ] && [ "${VECTOR_BACKEND:-faiss}" = "pgvector" ]; then
+    echo "[bootstrap] 幂等同步法律语料到 pgvector..."
+    python -m backend.scripts.sync_legal_corpus
 fi
 
 exec "$@"

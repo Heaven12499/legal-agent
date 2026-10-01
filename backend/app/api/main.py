@@ -27,6 +27,7 @@ from ..infra.observability import configure_logging, request_metrics_middleware
 from ..infra.rate_limit import enforce as enforce_rate_limit, ping as redis_ping
 from ..agent import context
 from ..agent.loop import run
+from ..core.corpus_store import corpus_ready
 from ..services import fileparse, review_tasks
 
 
@@ -157,13 +158,14 @@ def metrics() -> Response:
 
 @app.get("/ready")
 def ready() -> JSONResponse:
-    checks = {"database": False, "broker": False, "redis": False}
+    checks = {"database": False, "broker": False, "redis": False, "legal_corpus": False}
     try:
         with get_engine().connect() as conn:
             conn.execute(text("SELECT 1"))
         checks["database"] = True
     except Exception:
         pass
+    checks["legal_corpus"] = corpus_ready()
     try:
         if os.environ.get("CELERY_BROKER_URL") or os.environ.get("RABBITMQ_HOST"):
             from ..worker.celery_app import celery_app
