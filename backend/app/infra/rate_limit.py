@@ -5,26 +5,10 @@ import threading
 import time
 
 from fastapi import HTTPException
+from .redis_client import get_redis, ping
 
-_client = None
 _local: dict[str, tuple[int, float]] = {}
 _lock = threading.Lock()
-
-
-def get_redis():
-    global _client
-    url = os.environ.get("REDIS_URL")
-    if not url:
-        return None
-    if _client is None:
-        import redis
-        _client = redis.Redis.from_url(url, decode_responses=True, socket_timeout=1)
-    return _client
-
-
-def ping() -> bool:
-    client = get_redis()
-    return bool(client and client.ping())
 
 
 def enforce(bucket: str, identity: str, limit: int, window_seconds: int) -> None:

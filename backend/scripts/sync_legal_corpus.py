@@ -7,6 +7,7 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 from datetime import date
 from pathlib import Path
@@ -17,6 +18,7 @@ from sqlalchemy import select
 from backend.app.core.corpus_store import CHUNKS_PATH, EXPECTED_CHUNKS, chunk_key
 from backend.app.core.embeddings import embed_documents
 from backend.app.infra.database import database_url, session_scope
+from backend.app.infra.distributed_lock import distributed_lock
 from backend.app.infra.models import LegalChunk, LegalDocument, LegalDocumentVersion
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -160,7 +162,16 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="只检查数据库语料数量")
     args = parser.parse_args()
-    print(json.dumps(sync(check_only=args.check), ensure_ascii=False))
+    if args.check:
+        print(json.dumps(sync(check_only=True), ensure_ascii=False))
+        return
+    corpus_version = os.environ.get("LEGAL_CORPUS_VERSION", "v1")
+    with distributed_lock(
+        f"lock:legal-corpus:sync:{corpus_version}",
+        lease_seconds=int(os.environ.get("CORPUS_SYNC_LOCK_SECONDS", "1800")),
+        wait_seconds=int(os.environ.get("CORPUS_SYNC_LOCK_WAIT_SECONDS", "600")),
+    ):
+        print(json.dumps(sync(), ensure_ascii=False))
 
 
 if __name__ == "__main__":

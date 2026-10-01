@@ -10,6 +10,7 @@ from pathlib import Path
 from openai import OpenAI
 
 from ..infra.observability import LLM_LATENCY, LLM_REQUESTS, LLM_TOKENS
+from ..infra.semaphore import leased_semaphore
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _instance = None
@@ -64,7 +65,14 @@ def chat(messages: list, **kw):
     for attempt in range(3):
         started = time.perf_counter()
         try:
-            response = client.chat.completions.create(model=model, messages=messages, **kw)
+            with leased_semaphore(
+                f"ai:semaphore:model:{model}",
+                int(os.environ.get("MODEL_LLM_CONCURRENCY", "8")),
+                lease_seconds=float(os.environ.get("MODEL_SEMAPHORE_LEASE_SECONDS", "90")),
+                wait_seconds=float(os.environ.get("MODEL_SEMAPHORE_WAIT_SECONDS", "30")),
+                scope="model_llm",
+            ):
+                response = client.chat.completions.create(model=model, messages=messages, **kw)
             LLM_REQUESTS.labels(model, "success").inc()
             usage = getattr(response, "usage", None)
             if usage:

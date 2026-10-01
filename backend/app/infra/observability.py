@@ -8,7 +8,7 @@ import uuid
 from contextvars import ContextVar
 from datetime import datetime, timezone
 
-from prometheus_client import Counter, Histogram
+from prometheus_client import Counter, Gauge, Histogram
 
 request_id_ctx: ContextVar[str] = ContextVar("request_id", default="-")
 
@@ -29,6 +29,21 @@ LLM_LATENCY = Histogram(
 )
 LLM_TOKENS = Counter(
     "legal_rag_llm_tokens_total", "LLM token usage", ["model", "kind"]
+)
+REVIEW_EVENTS = Counter(
+    "legal_rag_review_events_total", "Review runtime events", ["event"]
+)
+SSE_CONNECTIONS = Gauge(
+    "legal_rag_sse_connections", "Active review SSE connections"
+)
+SEMAPHORE_WAIT = Histogram(
+    "legal_rag_semaphore_wait_seconds", "Distributed semaphore wait time", ["scope"]
+)
+SEMAPHORE_IN_USE = Gauge(
+    "legal_rag_semaphore_in_use", "Leases held by this process", ["scope"]
+)
+REDIS_FAILURES = Counter(
+    "legal_rag_redis_failures_total", "Redis runtime-control failures", ["operation"]
 )
 
 
