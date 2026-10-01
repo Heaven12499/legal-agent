@@ -48,7 +48,7 @@ Vue 3 → FastAPI ──→ PostgreSQL（会话、任务、Outbox、Trace）
 
 ### 公开合同短条款集
 
-主评测集来自 10 份政府采购公开合同，裁出 28 条二次脱敏短条款并标注 30 个重点核查点。2026-09-05 单次完整 Agent 运行结果：
+公开数据集已扩展至 25 份政府采购公开合同、70 条二次脱敏短条款。为避免扩容时把自动预标注当成人工金标，当前计分子集仍为原 10 份合同中的 30 个正样本核查点和 13 个负样本；新增 15 份合同的 42 条条款标记为 `pending_review`，完成独立人工复核前不进入准确率、召回率或 F1。2026-09-05 计分子集的单次完整 Agent 运行结果：
 
 | 指标 | 结果 |
 |---|---:|
@@ -58,7 +58,7 @@ Vue 3 → FastAPI ──→ PostgreSQL（会话、任务、Outbox、Trace）
 | 无效引用 | 0 |
 | 无本轮依据引用 | 1 |
 
-其中 1 处无本轮依据引用已被证据白名单校验器识别并在答案中标注警告。完整逐条结果见 [公开条款评测报告](sample_contracts/public_clause_benchmark/eval_report.json)，数据来源与标注边界见 [评测集说明](sample_contracts/public_clause_benchmark/README.md)。
+其中 1 处无本轮依据引用已被证据白名单校验器识别并在答案中标注警告。评测脚本现已支持正负样本风险判定的 Precision、Recall、F1、Accuracy 与混淆矩阵；扩展集完成人工复核后再发布新指标。完整逐条结果见 [公开条款评测报告](sample_contracts/public_clause_benchmark/eval_report.json)，数据来源与标注边界见 [评测集说明](sample_contracts/public_clause_benchmark/README.md)。
 
 ### 合成合同回归集
 
