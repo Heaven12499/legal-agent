@@ -5,16 +5,13 @@ agent 的工具层：retrieve 工具的 function calling schema + 执行器。
 查询改写不设单独工具——检索一次不够就换法律术语再检，在 loop 循环里自然发生。
 执行器直接复用 core.hybrid 的混合检索；label 口径与 verify_retrieval.py 一致。
 """
-import json
-from pathlib import Path
-
 from ..core.hybrid import get_hybrid
 from ..core.citations import normalize_law
+from ..core.corpus_store import load_chunks
 
 # 命中法条后，把同法相邻条（序数 ±NEIGHBOR_SPAN）也补进上下文。
 # 法律条文高度关联（如 585 违约金常要和 584/586 配套引用），单条 chunk 里 LLM 看不到邻居。
 NEIGHBOR_SPAN = 1
-_PROJ = Path(__file__).resolve().parents[3]
 _nbr_index = None
 
 
@@ -23,7 +20,7 @@ def _neighbor_index() -> dict:
     global _nbr_index
     if _nbr_index is None:
         idx: dict = {}
-        for ch in json.loads((_PROJ / "corpus" / "chunks.json").read_text(encoding="utf-8")):
+        for ch in load_chunks():
             idx.setdefault(ch["法律"], {})[ch["序数"]] = ch
         _nbr_index = idx
     return _nbr_index
@@ -34,7 +31,7 @@ def _expand_neighbors(hits: list) -> list:
 
     只补同法、序数真实存在的条；不重复。返回主命中 + 邻居。"""
     idx = _neighbor_index()
-    # chunks.json 的主命中和索引里的相邻条不是同一个 Python 对象，不能用 id() 去重；
+    # 向量主命中和相邻条索引里的对象可能不是同一个 Python 对象，不能用 id() 去重；
     # 否则主命中会被作为“邻居”重复拼入上下文，挤占真正的关联法条。
     by_key = {(h["法律"], h["序数"]): h for h in hits}
     for h in hits:
@@ -141,7 +138,7 @@ LOOKUP_TOOL = {
 def lookup_article(law_name: str, article_number: int) -> dict:
     """按规范法名（自动别名归一）+ 条号从语料精确查一条法条原文。
 
-    数据全部来自 chunks.json，绝不虚构。找不到时如实返回未找到。返回结构化
+    数据全部来自当前法律语料后端，绝不虚构。找不到时如实返回未找到。返回结构化
     {text, labels, found}，found 供调用方/反思循环判断是否命中。"""
     law = normalize_law(law_name or "")
     ch = _neighbor_index().get(law, {}).get(int(article_number))

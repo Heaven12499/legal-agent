@@ -8,8 +8,10 @@ from pathlib import Path
 
 import faiss
 import numpy as np
+from sqlalchemy import select
 
 from .embeddings import embed_documents, embed_query
+from .corpus_store import vector_backend
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 CHUNKS_PATH = PROJECT_ROOT / "corpus" / "chunks.json"
@@ -50,12 +52,12 @@ class Retriever:
         return cls(index=index, chunks=chunks)
 
     # ---------- 检索 ----------
-    def _ranked(self, query: str, k: int) -> list[tuple[int, float]]:
-        """内部：返回 top-k 的 (chunk下标, 向量分数)，供 RRF 融合用。"""
+    def _ranked(self, query: str, k: int) -> list[tuple[dict, float]]:
+        """内部：返回 top-k 的 (chunk, 向量分数)，供 RRF 按稳定 chunk_key 融合。"""
         q = embed_query(query).reshape(1, -1)
         scores, ids = self.index.search(q, k)
         return [
-            (int(i), float(s))
+            (self.chunks[int(i)], float(s))
             for s, i in zip(scores[0], ids[0])
             if i >= 0  # 索引条数不足 k 时，多余槽位是 -1，跳过
         ]
@@ -63,14 +65,56 @@ class Retriever:
     def search(self, query: str, k: int = 5) -> list:
         """对外：返回 top-k chunk 元数据（带 score），按相似度降序。"""
         return [
-            {**self.chunks[i], "score": round(s, 4)}
-            for i, s in self._ranked(query, k)
+            {**chunk, "score": round(s, 4)}
+            for chunk, s in self._ranked(query, k)
         ]
 
 
-def get_retriever() -> Retriever:
+class PgVectorRetriever:
+    """PostgreSQL 精确余弦检索；第一阶段不创建任何近似向量索引。"""
+
+    def _ranked(self, query: str, k: int) -> list[tuple[dict, float]]:
+        from ..infra.database import session_scope
+        from ..infra.models import LegalChunk, LegalDocument, LegalDocumentVersion
+
+        query_vector = embed_query(query).astype(np.float32).tolist()
+        distance = LegalChunk.embedding.cosine_distance(query_vector).label("distance")
+        stmt = (
+            select(LegalChunk, LegalDocument.name, distance)
+            .join(LegalDocumentVersion, LegalChunk.version_id == LegalDocumentVersion.id)
+            .join(LegalDocument, LegalDocumentVersion.document_id == LegalDocument.id)
+            .where(
+                LegalDocument.jurisdiction == "CN",
+                LegalDocumentVersion.status == "active",
+            )
+            .order_by(distance, LegalChunk.id)
+            .limit(k)
+        )
+        with session_scope() as db:
+            rows = db.execute(stmt).all()
+        return [
+            ({
+                "chunk_key": row.LegalChunk.chunk_key,
+                "法律": row.name,
+                "章": row.LegalChunk.chapter,
+                "节": row.LegalChunk.section,
+                "条号": row.LegalChunk.article_label,
+                "序数": row.LegalChunk.article_number,
+                "文本": row.LegalChunk.content,
+            }, 1.0 - float(row.distance))
+            for row in rows
+        ]
+
+    def search(self, query: str, k: int = 5) -> list:
+        return [{**chunk, "score": round(score, 4)} for chunk, score in self._ranked(query, k)]
+
+
+def get_retriever() -> Retriever | PgVectorRetriever:
     """懒加载单例：有落盘索引就 load，没有就 build。"""
     global _instance
     if _instance is None:
-        _instance = Retriever.load() if INDEX_PATH.exists() else Retriever.build()
+        if vector_backend() == "pgvector":
+            _instance = PgVectorRetriever()
+        else:
+            _instance = Retriever.load() if INDEX_PATH.exists() else Retriever.build()
     return _instance

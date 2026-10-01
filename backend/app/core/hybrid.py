@@ -6,6 +6,7 @@ RRF 只看排名不看分数，规避两路分数量纲不可比的问题（原�
 import logging
 
 from .bm25 import get_bm25
+from .corpus_store import chunk_key
 from .retriever import get_retriever
 from .rerank import enabled
 
@@ -29,12 +30,15 @@ class HybridRetriever:
             rrf_k RRF 的平滑常数（越大，融合分越"平均"，排名差距影响越小）
             n     每路候选数，要比 k 大——融合才有得选，不是拿两路 top-k 硬拼
         """
-        # 双路各自的"排名表"：chunk下标 -> 该路中的排位（0 起）
-        vec_rank = {i: r for r, (i, _) in enumerate(self.vector._ranked(query, n))}
-        bm25_rank = {i: r for r, (i, _) in enumerate(self.bm25._ranked(query, n))}
+        # 双路各自的"排名表"：稳定 chunk_key -> 该路中的排位（0 起）
+        vector_rows = self.vector._ranked(query, n)
+        bm25_rows = self.bm25._ranked(query, n)
+        chunks = {chunk_key(chunk): chunk for chunk, _ in [*vector_rows, *bm25_rows]}
+        vec_rank = {chunk_key(chunk): r for r, (chunk, _) in enumerate(vector_rows)}
+        bm25_rank = {chunk_key(chunk): r for r, (chunk, _) in enumerate(bm25_rows)}
 
         # RRF 融合：只有某一路命中的 chunk，融合分也只有一个加项
-        fused: dict[int, float] = {}
+        fused: dict[str, float] = {}
         for i, r in vec_rank.items():
             fused[i] = 1.0 / (rrf_k + r)
         for i, r in bm25_rank.items():
@@ -47,7 +51,7 @@ class HybridRetriever:
             try:
                 from .rerank import rerank
 
-                top_n = [self.vector.chunks[i] for i in ranked[:n]]
+                top_n = [chunks[key] for key in ranked[:n]]
                 return rerank(query, top_n, k)
             except Exception as exc:  # noqa: BLE001 —— 模型缺失/加载失败，保服务可用性
                 global _rerank_fallback_warned
@@ -57,12 +61,12 @@ class HybridRetriever:
                 pass
         return [
             {
-                **self.vector.chunks[i],
-                "score": round(fused[i], 4),
-                "向量排位": vec_rank.get(i, None) + 1 if i in vec_rank else None,
-                "BM25排位": bm25_rank.get(i, None) + 1 if i in bm25_rank else None,
+                **chunks[key],
+                "score": round(fused[key], 4),
+                "向量排位": vec_rank.get(key, None) + 1 if key in vec_rank else None,
+                "BM25排位": bm25_rank.get(key, None) + 1 if key in bm25_rank else None,
             }
-            for i in ranked[:k]
+            for key in ranked[:k]
         ]
 
 

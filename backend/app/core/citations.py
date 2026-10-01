@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 """引用校验（M6 反幻觉）：抽答案里「《法》第X条」，逐条核对是否真实存在于语料，
 把编造/张冠李戴的引用如实揪出来。只核对+标注，不静默通过。「绝不编造」红线落地。"""
-import json
 import re
-from pathlib import Path
 
 from .chunking import cn_num_to_int
-
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+from .corpus_store import load_chunks
 
 # 法律名别名 → chunks 里的规范名（法律字段）。
 # 注意：旧《合同法》的条号与民法典合同编不一一对应（旧114违约金≈民法典585），
@@ -40,15 +37,12 @@ CITE_RE = re.compile(r"《([^》]+)》第([一二三四五六七八九十百零\
 
 
 def _load() -> tuple[dict, dict]:
-    """一次读 chunks.json，同时得到两条全量：
+    """一次读取当前语料后端，同时得到两条全量：
     VALID = {规范法名: {序数 int, ...}}（"真实存在"的引用全集）
     TEXTS = {规范法名: {序数 int: 条文文本}}（供内容忠实度核对）"""
-    path = PROJECT_ROOT / "corpus" / "chunks.json"
-    if not path.exists():
-        raise FileNotFoundError("缺少 corpus/chunks.json，请先运行 python -m backend.app.core.chunking")
     valid: dict = {}
     texts: dict = {}
-    for ch in json.loads(path.read_text(encoding="utf-8")):
+    for ch in load_chunks():
         valid.setdefault(ch["法律"], set()).add(ch["序数"])
         texts.setdefault(ch["法律"], {})[ch["序数"]] = ch["文本"]
     return valid, texts
