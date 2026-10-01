@@ -147,6 +147,7 @@ def _reflect(messages: list, answer: str, allowed: set[tuple[str, int]], coverag
         json_hint = (
             '请以 JSON 格式返回，字段：{"verdict": "pass" 或 "fix", '
             '"fixed_answer": "修正后的完整回答"}；不要输出 JSON 之外的任何内容。'
+            '若用户规定了首行或其他输出协议，fixed_answer 必须完整保留该协议。'
         )
         try:
             resp = chat(
