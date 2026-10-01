@@ -4,9 +4,14 @@ from pathlib import Path
 
 _tmp = tempfile.TemporaryDirectory()
 os.environ.pop("DATABASE_URL", None)
+for _name in ("DB_HOST", "DB_PORT", "DB_NAME", "DB_USER", "DB_PASSWORD"):
+    os.environ.pop(_name, None)
 os.environ.pop("REDIS_URL", None)
 os.environ.pop("CELERY_BROKER_URL", None)
+for _name in ("RABBITMQ_HOST", "RABBITMQ_PORT", "RABBITMQ_USER", "RABBITMQ_PASSWORD"):
+    os.environ.pop(_name, None)
 os.environ["SESSION_DB"] = str(Path(_tmp.name) / "api-test.db")
+os.environ["VECTOR_BACKEND"] = "faiss"
 os.environ["INIT_PASSWORD"] = "test-password-123"
 os.environ["JWT_SECRET"] = "test-jwt-secret-at-least-32-characters"
 os.environ["APP_ENV"] = "test"
@@ -50,6 +55,7 @@ def test_health_auth_review_and_isolation(monkeypatch):
         job_id = created.json()["job_id"]
         assert client.get(f"/api/reviews/{job_id}", headers=alice).status_code == 200
         assert client.get(f"/api/reviews/{job_id}", headers=bob).status_code == 404
+        assert client.get(f"/api/reviews/{job_id}/events", headers=bob).status_code == 404
 
 
 def test_job_completion_is_idempotent(monkeypatch):
@@ -98,7 +104,7 @@ def test_celery_worker_path(monkeypatch):
     monkeypatch.setattr(review_tasks, "submit_job", lambda job_id: None)
     monkeypatch.setattr(review_tasks, "recover_jobs", lambda: 0)
     monkeypatch.setattr(review_tasks, "start_dispatcher", lambda: None)
-    monkeypatch.setattr(tasks, "run", lambda message, history: {
+    monkeypatch.setattr(tasks, "run", lambda message, history, **_kwargs: {
         "answer": "worker 完成", "trace": [], "citation_check": {"total": 0},
     })
     with TestClient(app) as client:
@@ -110,3 +116,6 @@ def test_celery_worker_path(monkeypatch):
         assert outcome["status"] == "succeeded"
         done = client.get(f"/api/reviews/{created['job_id']}", headers=headers).json()
         assert done["status"] == "succeeded" and done["result"]["answer"] == "worker 完成"
+        events = client.get(f"/api/reviews/{created['job_id']}/events", headers=headers)
+        assert events.status_code == 200
+        assert "event: completed" in events.text

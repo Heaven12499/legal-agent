@@ -16,6 +16,7 @@
 - **Agent 工具调用**：单智能体自主决定检索、精确查询法条或直接回答，设置最大轮次防止无限循环，并记录完整 trace。
 - **完整 Web 体验**：支持 docx、PDF、TXT 上传，多轮会话、消息修改与重新生成、PostgreSQL 持久化，以及 JWT 多用户隔离。
 - **可靠长任务**：FastAPI 通过 Transactional Outbox 向 RabbitMQ 发布任务，独立 Celery Worker 以租约和幂等键消费；支持进度查询、自动/人工重试及故障接管。
+- **AI Runtime 治理**：Redis Streams + SSE 实时推送审查进度与 Agent Trace；Lua + ZSET 租约信号量限制用户/模型并发，Worker 崩溃后自动回收额度。
 - **生产可观测性**：JSON 结构化日志、请求/任务链路 ID、健康与就绪检查、Prometheus 指标和 Redis 分布式限流。
 - **可复现评测**：合成合同用于回归测试，公开合同短条款用于外部验证，两类结果分开报告。
 
@@ -24,7 +25,7 @@
 ~~~text
 Vue 3 → FastAPI ──→ PostgreSQL + pgvector（会话、任务、法律版本、向量、Outbox、Trace）
              │
-             ├──→ Redis（用户/IP 限流）
+             ├──→ Redis（限流、Streams/SSE、LLM 并发租约）
              └──→ RabbitMQ → Celery Worker → Agentic RAG → PostgreSQL
 ~~~
 
@@ -129,7 +130,7 @@ npm run dev
 | 前端 | Vue 3、Vite |
 | 后端 | FastAPI、Uvicorn、SQLAlchemy、PostgreSQL、Alembic |
 | 异步任务 | RabbitMQ、Celery、Transactional Outbox、任务租约与幂等消费 |
-| 限流与观测 | Redis、Prometheus、JSON Structured Logging |
+| AI Runtime 与观测 | Redis Streams、SSE、Lua + ZSET 租约信号量、Prometheus、JSON Structured Logging |
 | Agent | OpenAI-compatible Function Calling、DeepSeek API |
 | 检索 | pgvector 精确余弦检索、bge-small-zh-v1.5、BM25、jieba、RRF；FAISS 仅作本地回归对照 |
 | 可选精排 | BAAI/bge-reranker-base |
@@ -187,4 +188,4 @@ python -X utf8 -m backend.scripts.eval_public_clauses --agent
 
 系统定位为合同初审辅助工具：检索不到直接依据时明确说明，不使用模型常识补造法条，也不自动替代、修改或签署合同。
 
-运行后可用 `/health` 检查进程存活、`/ready` 检查 PostgreSQL/RabbitMQ/Redis 依赖，Prometheus 指标暴露在 `/metrics`。
+运行后可用 `/health` 检查进程存活、`/ready` 检查 PostgreSQL/RabbitMQ/Redis 依赖，Prometheus 指标暴露在 `/metrics`。异步审查进度通过带 JWT 鉴权的 `/api/reviews/{job_id}/events` SSE 接口推送，支持 `Last-Event-ID` 续传；Redis 不可用时前端自动回退 PostgreSQL 状态轮询，最终任务结果不依赖事件流保存。
