@@ -24,17 +24,18 @@
 ## 当前标注状态与测评
 
 - `manifest.json`：25 份合同裁出的 70 条有效短条款；15 份扩展合同均来自中国政府采购网官方合同公告附件。
-- `annotations.json`：95 条记录，包括 30 个已计分正样本点、13 个已计分负样本、10 个排除项，以及 42 条 `pending_review` 扩展条款。扩展条款在独立人工复核前不参与指标计算。
-- `eval_report.json`：2026-10-01 按新协议单次运行。Top-5 金标法条命中 30/30（MRR 0.375），Agent 金标法条命中 26/30；风险判定 Precision 73.0%、Recall 90.0%、F1 80.6%，但负样本特异度为 0%，判定协议遵循率为 86.0%。
-- 本轮 10 个已解析负样本全部被误报为需重点核查，另有 3 个负样本未按协议输出；同时出现 2 处无效引用和 8 处无本轮依据引用。该结果说明当前 Agent 存在明显风险过报与证据约束退化，不能只展示 F1 或 Recall。
+- `annotations.json`：95 条记录，包括 51 个重点核查样本点、24 个无明显风险样本和 20 个排除项。排除原因包括父子样本重复、OCR 破损、上下文不足及单轮策展仍有合理分歧。
+- v0.4 修正了旧版“未命中特殊规则即默认负例”的问题；例如包含“财政支付延误且甲方免责”的 `08_ntp_procurement_01_acceptance` 已从错误负例改为正例。正负样本统一使用相同的中性 Agent 问题，不再向正例泄漏风险类型。
+- `eval_report.json`：2026-10-01 单次运行。Top-5 金标法条命中 51/51（MRR 0.485），Agent 金标法条命中 36/51；风险判定 Precision 92.0%、Recall 90.2%、F1 91.1%、特异度 79.2%，判定协议遵循率 97.3%。
+- 75 个计分样本的混淆矩阵为 TP=46、FP=4、FN=4、TN=19，另有 2 个协议未解析；出现 2 处无效引用和 3 处无本轮依据引用。仍须同时展示特异度、协议遵循率和引用约束指标，不能只展示 F1。
 - Agent 评测要求首行输出固定风险判定，并自动统计 TP、FP、FN、TN、Precision、Recall、F1、特异度、协议遵循率和 Accuracy；协议未解析的样本计入严格指标分母，不会被静默排除。
-- 8 条父级长条款因已拆为子条款、2 条 OCR 噪声不参与打分。
+- 当前标签是基准维护者按明确阈值完成的单轮策展标注，不等同于双人律师复核金标；`annotation_status=single_pass_curated` 如实保留该限制。
 
 ## 扩展流程
 
 1. `import_public_contracts.py` 支持按合同 ID 增量导入，也可用 `--from-raw` 处理已取得的官方扫描附件；OCR 只在本地执行。
 2. `build_public_clause_benchmark.py --ids ...` 增量裁切条款并合并 manifest，兼容中文、阿拉伯数字和章节式标题。
-3. `annotate_public_clause_benchmark.py` 同步标注文件，新扩展条款默认进入 `pending_review`，不会自动伪装成金标。
-4. 独立复核人员补齐 `risk_label`、`gold_articles`、`reviewer` 与 `review_date` 后，才允许进入计分 split。
+3. `annotate_public_clause_benchmark.py` 按显式白名单生成正例、负例和排除项，不再用“其余全部为负例”的默认规则。
+4. 若升级为正式法律评测集，应由两名独立复核人员补齐 `risk_label`、`gold_articles`、`reviewer` 与 `review_date`，并对分歧样本仲裁；当前结果只用于项目开发评测。
 
 运行：`python -X utf8 -m backend.scripts.eval_public_clauses --agent`。该命令会调用模型并覆盖 `eval_report.json`。
