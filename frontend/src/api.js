@@ -71,15 +71,72 @@ export function retryReview(jobId) {
   return request(`/reviews/${encodeURIComponent(jobId)}/retry`, { method: "POST" });
 }
 
-export async function sendReview(message, sessionId, contract = undefined, contractName = undefined) {
+export async function streamReviewEvents(jobId, onEvent, lastEventId = "0-0") {
+  const headers = { Accept: "text/event-stream", "Last-Event-ID": lastEventId };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${BASE}/reviews/${encodeURIComponent(jobId)}/events`, { headers });
+  if (!res.ok || !res.body) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "实时进度连接失败");
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value || new Uint8Array(), { stream: !done }).replace(/\r\n/g, "\n");
+    const frames = buffer.split("\n\n");
+    buffer = frames.pop() || "";
+    for (const frame of frames) {
+      if (!frame || frame.startsWith(":")) continue;
+      let id = lastEventId;
+      let eventName = "progress";
+      const dataLines = [];
+      for (const line of frame.split("\n")) {
+        if (line.startsWith("id:")) id = line.slice(3).trim();
+        else if (line.startsWith("event:")) eventName = line.slice(6).trim();
+        else if (line.startsWith("data:")) dataLines.push(line.slice(5).trimStart());
+      }
+      if (!dataLines.length) continue;
+      lastEventId = id;
+      const payload = JSON.parse(dataLines.join("\n"));
+      onEvent?.({ ...payload, id, event: payload.event || eventName });
+      if (["completed", "failed"].includes(payload.event || eventName)) return lastEventId;
+    }
+    if (done) throw new Error("实时进度连接提前结束");
+  }
+}
+
+export async function sendReview(
+  message,
+  sessionId,
+  contract = undefined,
+  contractName = undefined,
+  onProgress = undefined,
+) {
   let job = await createReview(message, sessionId, contract, contractName);
+  if (!["succeeded", "failed"].includes(job.status)) {
+    try {
+      await streamReviewEvents(job.job_id, onProgress);
+    } catch {
+      // Redis/SSE 不可用时沿用下面的 PostgreSQL 状态轮询，不影响最终结果。
+    }
+  }
   // 10 分钟上限只是浏览器等待保护；任务仍在服务端继续执行，可凭 job_id 再查询。
   const deadline = Date.now() + 10 * 60 * 1000;
   while (Date.now() < deadline) {
     if (job.status === "succeeded") return job.result;
     if (job.status === "failed") throw new Error(job.error || "合同审查失败");
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 1200));
     job = await getReview(job.job_id);
+    onProgress?.({
+      event: job.status === "succeeded" ? "completed" : job.status,
+      phase: job.phase,
+      progress: job.progress,
+      message: `任务状态：${job.phase}`,
+      source: "postgresql_poll",
+    });
   }
   throw new Error(`审查仍在后台执行，任务编号：${job.job_id}`);
 }

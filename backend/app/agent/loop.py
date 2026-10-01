@@ -186,7 +186,8 @@ def _reflect(messages: list, answer: str, allowed: set[tuple[str, int]], coverag
     return annotate(answer, check), check, reflections, stats
 
 
-def run(query: str, history: list | None = None, max_rounds: int = 10) -> dict:
+def run(query: str, history: list | None = None, max_rounds: int = 10,
+        progress_callback=None) -> dict:
     """跑一轮 agent，返回 {"answer": str, "rounds": int, "trace": [...]}。
 
     history 是上一轮对话的干净 user/assistant 轮次（不含中间 tool 消息），
@@ -254,10 +255,13 @@ def run(query: str, history: list | None = None, max_rounds: int = 10) -> dict:
             messages.append(
                 {"role": "tool", "tool_call_id": tc.id, "content": result["text"]}
             )
-            trace.append(
-                {"round": rnd, "tool": tc.function.name, "query": args.get("query", ""),
-                 "hits": result["labels"], "evidence": result.get("evidence", [])}
-            )
+            trace_item = {
+                "round": rnd, "tool": tc.function.name, "query": args.get("query", ""),
+                "hits": result["labels"], "evidence": result.get("evidence", []),
+            }
+            trace.append(trace_item)
+            if progress_callback:
+                progress_callback(trace_item)
 
         # 只有模型已经判断本轮需要工具后，才补充常见易漏风险的候选依据；这样既保留
         # 合同审查覆盖率，也不会让非法律问题因历史合同中的关键词被提前强制检索。
@@ -276,13 +280,16 @@ def run(query: str, history: list | None = None, max_rounds: int = 10) -> dict:
                         f"不要仅因出现该词语直接作出无效结论：\n\n{result['text']}"
                     ),
                 })
-                trace.append({
+                trace_item = {
                     "round": rnd,
                     "tool": "coverage_prefetch",
                     "query": rule["query"],
                     "hits": result["labels"],
                     "evidence": result.get("evidence", []),
-                })
+                }
+                trace.append(trace_item)
+                if progress_callback:
+                    progress_callback(trace_item)
             coverage_prefetched = True
 
     # 超轮次仍无答案：返回最后已知信息

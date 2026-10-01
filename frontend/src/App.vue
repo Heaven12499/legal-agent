@@ -13,6 +13,7 @@ const messages = ref([]); // {id, role, content, trace?, citation_check?}
 const sessions = ref([]);
 const input = ref("");
 const sending = ref(false);
+const reviewProgress = ref(null);
 const uploading = ref(false);
 const fileInput = ref(null);
 const uploadedFile = ref(null); // {name, text?}；历史附件只保留名称，全文仍在服务端
@@ -138,7 +139,14 @@ async function sendAndAppend(msg, contract) {
   sending.value = true;
   try {
     const contractName = contract && uploadedFile.value?.text ? uploadedFile.value.name : undefined;
-    const data = await sendReview(msg, sessionId.value, contract, contractName);
+    reviewProgress.value = { progress: 0, phase: "queued", message: "正在创建审查任务" };
+    const data = await sendReview(
+      msg,
+      sessionId.value,
+      contract,
+      contractName,
+      (event) => { reviewProgress.value = event; },
+    );
     userMsg.id = data.user_id;
     messages.value.push({
       id: data.assistant_id,
@@ -154,6 +162,7 @@ async function sendAndAppend(msg, contract) {
     return false;
   } finally {
     sending.value = false;
+    reviewProgress.value = null;
   }
 }
 
@@ -277,6 +286,22 @@ watch(() => messages.value.length, scrollToBottom);
             @regenerate="onRegenerate"
           />
         </template>
+      </div>
+
+      <div v-if="sending && reviewProgress" class="runtime-progress" aria-live="polite">
+        <div class="runtime-progress-head">
+          <span>{{ reviewProgress.message || "正在审查合同" }}</span>
+          <strong>{{ reviewProgress.progress ?? 0 }}%</strong>
+        </div>
+        <div class="runtime-progress-track">
+          <span :style="{ width: `${reviewProgress.progress ?? 0}%` }"></span>
+        </div>
+        <small>{{ reviewProgress.phase }}</small>
+        <div v-if="reviewProgress.trace" class="runtime-trace">
+          <span>{{ reviewProgress.trace.tool }}</span>
+          <span v-if="reviewProgress.trace.query">“{{ reviewProgress.trace.query }}”</span>
+          <span v-if="reviewProgress.trace.hits?.length">命中：{{ reviewProgress.trace.hits.join("、") }}</span>
+        </div>
       </div>
 
       <form id="chat-form" @submit.prevent="submit">

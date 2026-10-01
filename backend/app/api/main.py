@@ -15,13 +15,13 @@ log = logging.getLogger(__name__)
 import uvicorn
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Header, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, Field
 from sqlalchemy import text
 from starlette.concurrency import run_in_threadpool
 
-from ..infra import session, auth, review_jobs
+from ..infra import session, auth, review_events, review_jobs
 from ..infra.database import get_engine
 from ..infra.observability import configure_logging, request_metrics_middleware
 from ..infra.rate_limit import enforce as enforce_rate_limit, ping as redis_ping
@@ -268,6 +268,7 @@ def create_review(req: ReviewJobRequest, user: dict = Depends(get_current_user))
         )
     except ValueError as e:
         raise HTTPException(status_code=403, detail=str(e))
+    review_events.publish(job["job_id"], "queued", progress=0, phase="queued")
     review_tasks.submit_job(job["job_id"])
     return job
 
@@ -281,12 +282,33 @@ def get_review(job_id: str, user: dict = Depends(get_current_user)) -> dict:
     return job
 
 
+@app.get("/api/reviews/{job_id}/events")
+def review_event_stream(
+    job_id: str,
+    user: dict = Depends(get_current_user),
+    last_event_id: str | None = Header(None, alias="Last-Event-ID"),
+) -> StreamingResponse:
+    """带鉴权的 SSE：支持 Last-Event-ID，Redis 故障时降级读取 PostgreSQL。"""
+    if review_jobs.get(user["id"], job_id) is None:
+        raise HTTPException(status_code=404, detail="审查任务不存在")
+    return StreamingResponse(
+        review_events.stream(user["id"], job_id, last_event_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
 @app.post("/api/reviews/{job_id}/retry", status_code=202)
 def retry_review(job_id: str, user: dict = Depends(get_current_user)) -> dict:
     """人工重试最终失败的任务，复用原始输入且不重复写入用户消息。"""
     job = review_jobs.retry(user["id"], job_id)
     if job is None:
         raise HTTPException(status_code=409, detail="任务不存在或当前状态不可重试")
+    review_events.publish(job_id, "queued", progress=0, phase="queued", message="人工重试已入队")
     review_tasks.submit_job(job_id)
     return job
 
