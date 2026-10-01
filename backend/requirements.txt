@@ -35,6 +35,7 @@ PyJWT==2.13.0
 SQLAlchemy==2.0.43
 alembic==1.16.5
 psycopg[binary]==3.2.10
+pgvector==0.4.2
 
 # ---- 可靠异步任务与分布式限流 ----
 celery==5.5.3
