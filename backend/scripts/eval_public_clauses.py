@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """公开条款级评测：默认只测混合检索；--agent 才会调用 LLM。
 
-正样本评估“关键法条是否进入 top-k”，负样本不以关键词或引用数量自动判分，
-保留给人工判断模型是否误报风险。
+检索指标仅面向有金标法条的正样本；Agent 模式要求模型输出结构化判定，
+对已复核正负样本计算风险识别 Precision / Recall / F1。待复核扩展样本不计分。
 """
 import argparse
 import json
@@ -14,6 +14,11 @@ from backend.app.core.citations import extract_citations
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATASET_DIR = PROJECT_ROOT / "sample_contracts" / "public_clause_benchmark"
+SCORED_SPLITS = {"positive", "negative_manual_review"}
+DECISION_INSTRUCTION = (
+    "你正在参加固定评测。回答第一行必须且只能是“判定：需重点核查”或"
+    "“判定：无明显风险”，之后再说明理由；不得省略第一行。"
+)
 
 
 def load() -> list[dict]:
@@ -61,18 +66,28 @@ def agent_eval(samples: list[dict]) -> list[dict]:
 
     rows = []
     for item in samples:
-        if item["split"] != "positive":
+        if item["split"] not in SCORED_SPLITS:
             continue
         clause = clause_text(item)
+        task_prompt = item.get(
+            "agent_prompt",
+            "请判断以下条款仅依据当前文本是否存在需要重点核查的合同风险，并说明判断依据。",
+        )
         result = run(
-            item["agent_prompt"],
+            f"{DECISION_INSTRUCTION}\n\n{task_prompt}",
             history=[{"role": "user", "content": f"待审查条款如下：\n\n{clause}"}],
         )
         cited = {(c["law"], c["num"]) for c in extract_citations(result["answer"])}
         gold = {tuple(x) for x in item["gold_articles"]}
         check = result.get("citation_check", {})
+        predicted_risk = parse_risk_decision(result["answer"])
+        gold_risk = item["split"] == "positive"
         rows.append({
-            "id": item["id"], "hit": bool(cited & gold), "gold": sorted(gold),
+            "id": item["id"],
+            "gold_risk": gold_risk,
+            "predicted_risk": predicted_risk,
+            "hit": bool(cited & gold) if gold_risk else None,
+            "gold": sorted(gold),
             "cited": sorted(cited), "rounds": result.get("rounds"),
             "citation_invalid": len(check.get("invalid", [])),
             "citation_ungrounded": len(check.get("ungrounded", [])),
@@ -81,7 +96,38 @@ def agent_eval(samples: list[dict]) -> list[dict]:
     return rows
 
 
+def parse_risk_decision(answer: str) -> bool | None:
+    """只解析评测协议规定的首行，避免用“风险”等关键词臆测模型判定。"""
+    first_line = answer.strip().splitlines()[0].replace(" ", "") if answer.strip() else ""
+    if first_line == "判定：需重点核查":
+        return True
+    if first_line == "判定：无明显风险":
+        return False
+    return None
+
+
+def summarize_risk(rows: list[dict]) -> dict:
+    decided = [row for row in rows if row["predicted_risk"] is not None]
+    tp = sum(row["gold_risk"] and row["predicted_risk"] for row in decided)
+    fp = sum(not row["gold_risk"] and row["predicted_risk"] for row in decided)
+    fn = sum(row["gold_risk"] and not row["predicted_risk"] for row in decided)
+    tn = sum(not row["gold_risk"] and not row["predicted_risk"] for row in decided)
+    precision = tp / (tp + fp) if tp + fp else 0.0
+    recall = tp / (tp + fn) if tp + fn else 0.0
+    return {
+        "evaluated": len(rows),
+        "decided": len(decided),
+        "unparseable": len(rows) - len(decided),
+        "tp": tp, "fp": fp, "fn": fn, "tn": tn,
+        "precision": precision,
+        "recall": recall,
+        "f1": 2 * precision * recall / (precision + recall) if precision + recall else 0.0,
+        "accuracy": (tp + tn) / len(decided) if decided else 0.0,
+    }
+
+
 def summarize(rows: list[dict]) -> dict:
+    rows = [row for row in rows if row.get("hit") is not None]
     summary = {
         "evaluated": len(rows),
         # 这里只测“金标法条是否被引用/检索到”，不是端到端风险识别召回率。
@@ -105,7 +151,10 @@ def main() -> None:
     report = {"retrieval_top_k": args.k, "retrieval": summarize(retrieval), "retrieval_rows": retrieval}
     if args.agent:
         agent = agent_eval(samples)
-        report["agent"] = summarize(agent)
+        report["agent"] = {
+            "citation": summarize(agent),
+            "risk_classification": summarize_risk(agent),
+        }
         report["agent_rows"] = agent
     out = DATASET_DIR / "eval_report.json"
     out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")

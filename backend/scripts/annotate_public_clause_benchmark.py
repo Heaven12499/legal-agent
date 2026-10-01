@@ -93,6 +93,14 @@ def main() -> None:
                 "query": "未支付价款 报酬 金钱债务 违约责任",
                 "agent_prompt": "请审查以下付款条款中“财政资金不到位或集中支付延误时不承担违约责任”的约定是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。",
             })
+        elif int(sample["contract_id"][:2]) >= 11:
+            item.update({
+                "split": "pending_review",
+                "label": "pending_human_review",
+                "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+                "gold_articles": [],
+                "annotation_status": "pending",
+            })
         else:
             item.update({
                 "split": "negative_manual_review",
@@ -122,7 +130,7 @@ def main() -> None:
             "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。",
         })
     payload = {
-        "version": "v0.2-provisional",
+        "version": "v0.3-expanded-pending-review",
         "label_definition": "重点核查需求，不是法律效力或责任的最终结论。",
         "samples": annotations,
     }

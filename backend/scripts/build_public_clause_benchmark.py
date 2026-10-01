@@ -4,6 +4,7 @@
 输出每份合同 3 段（验收、付款、违约；缺失时回退保密/质保），每段约 150~900 字。
 原始 OCR 全文不作为最终数据集的一部分。
 """
+import argparse
 import json
 import re
 import shutil
@@ -26,7 +27,17 @@ TARGETS = [
     ("liability", ("违约", "解除")),
 ]
 FALLBACKS = ("保密", "质保", "不可抗力", "争议")
-ARTICLE_RE = re.compile(r"第[一二三四五六七八九十]+条")
+MIN_CLAUSE_CHARS = 100
+# 扫描合同常混用“第十一条”“第11条”“四、付款”“6、验收”“9违约责任”。
+# 只在行首识别短标题，避免把 4.2.1 等正文子项误当成顶层章节。
+ARTICLE_RE = re.compile(
+    r"(?m)^(?:"
+    r"第(?:[零〇一二三四五六七八九十百]+|\d+)[条章]"
+    r"|[一二三四五六七八九十]{1,3}[、．.]"
+    r"|\d{1,2}[、．.]"
+    r"|\d{1,2}(?=(?:运输|交付|安装|调试|验收|付款|支付|违约|解除|争议|服务|保密|质保|不可抗力|合同|权利|义务))"
+    r")"
+)
 
 
 def clean_body(text: str) -> str:
@@ -54,21 +65,35 @@ def pick_section(sections: list[str], keywords: tuple[str, ...], used: set[str])
     for section in sections:
         key = section[:80]
         if key not in used and any(word in section[:140] for word in keywords):
-            used.add(key)
-            return compact(section)
+            candidate = compact(section)
+            if len(candidate) >= MIN_CLAUSE_CHARS:
+                used.add(key)
+                return candidate
     for section in sections:
         key = section[:80]
         if key not in used and any(word in section for word in keywords):
-            used.add(key)
-            return compact(section)
+            candidate = compact(section)
+            if len(candidate) >= MIN_CLAUSE_CHARS:
+                used.add(key)
+                return candidate
     return None
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--ids", nargs="*", help="只处理指定合同 id，并合并现有 manifest")
+    args = parser.parse_args()
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    records = []
+    manifest_path = OUT_DIR / "manifest.json"
+    previous = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
+    selected_ids = set(args.ids or [])
+    records_by_id = {
+        item["id"]: item for item in previous.get("samples", [])
+        if not selected_ids or item["contract_id"] not in selected_ids
+    }
     missing = []
-    for sample_id, contract_type, source_url in SOURCES:
+    selected = [row for row in SOURCES if not selected_ids or row[0] in selected_ids]
+    for sample_id, contract_type, source_url in selected:
         source = FULL_TEXT_DIR / f"{sample_id}.txt"
         if not source.exists():
             missing.append(sample_id)
@@ -104,7 +129,7 @@ def main() -> None:
                 f"{clause}\n",
                 encoding="utf-8",
             )
-            records.append({
+            record = {
                 "id": name.removesuffix(".txt"),
                 "contract_id": sample_id,
                 "contract_type": contract_type,
@@ -115,13 +140,22 @@ def main() -> None:
                 "characters": len(clause),
                 "annotation_status": "unlabeled",
                 "ocr_review_required": True,
-            })
-    (OUT_DIR / "manifest.json").write_text(
+            }
+            records_by_id[record["id"]] = record
+    records = sorted(records_by_id.values(), key=lambda item: item["id"])
+    manifest_path.write_text(
         json.dumps({"samples": records, "missing_contracts": missing}, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     # 完整 OCR 文本和原始附件不属于轻量数据集，生成条款后立即清理。
-    shutil.rmtree(FULL_TEXT_DIR)
+    if selected_ids:
+        # 缺少可识别章节的全文需保留给人工检查和解析规则修正。
+        for sample_id in selected_ids - set(missing):
+            (FULL_TEXT_DIR / f"{sample_id}.txt").unlink(missing_ok=True)
+        if FULL_TEXT_DIR.exists() and not any(FULL_TEXT_DIR.iterdir()):
+            FULL_TEXT_DIR.rmdir()
+    else:
+        shutil.rmtree(FULL_TEXT_DIR)
     shutil.rmtree(RAW_DIR, ignore_errors=True)
     print(f"完成：{len(records)} 条短条款，缺少合同：{missing}")
 

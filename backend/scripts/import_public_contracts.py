@@ -37,6 +37,21 @@ SOURCES = [
     ("08_ntp_procurement", "网络设备采购", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202501/t20250102_24006974.htm"),
     ("09_facility_repair", "维修工程", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202604/t20260421_26437210.htm"),
     ("10_cost_consulting", "工程造价咨询服务", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202604/t20260423_26449043.htm"),
+    ("11_accounting_platform", "软件开发服务", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202606/t20260603_26677438.htm"),
+    ("12_medical_equipment", "医疗设备采购", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202502/t20250220_24191705.htm"),
+    ("13_desktop_cloud", "信息技术运维服务", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202505/t20250523_24650626.htm"),
+    ("14_software_outsourcing", "软件人力外包服务", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202502/t20250219_24187003.htm"),
+    ("15_customs_system_development", "软件开发服务", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202511/t20251119_25725994.htm"),
+    ("16_customs_validation", "软件开发服务", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202512/t20251204_25858022.htm"),
+    ("17_on_site_service", "驻场服务", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202512/t20251225_25989588.htm"),
+    ("18_architecture_compliance", "软件开发服务", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202512/t20251226_25994759.htm"),
+    ("19_image_recognition", "人工智能技术服务", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202511/t20251111_25671307.htm"),
+    ("20_express_clearance", "软件开发服务", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202512/t20251225_25989601.htm"),
+    ("21_food_supply", "食材采购配送", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202609/t20260911_27315595.htm"),
+    ("22_museum_repair", "维修工程", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202608/t20260804_27063861.htm"),
+    ("23_laboratory_equipment", "实验室设备采购", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202607/t20260714_26931362.htm"),
+    ("24_building_inspection", "房屋安全鉴定服务", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202607/t20260710_26909633.htm"),
+    ("25_open_source_support", "信息技术运维服务", "https://www.ccgp.gov.cn/cggg/zygg/qtgg/202510/t20251015_25509095.htm"),
 ]
 
 USER_AGENT = (
@@ -89,8 +104,12 @@ def extract_with_ocr(pdf_path: Path, max_pages: int | None = None) -> str:
     image_dir = RAW_DIR / f"{pdf_path.stem}_pages"
     image_dir.mkdir(parents=True, exist_ok=True)
     prefix = image_dir / "page"
+    command = [poppler, "-r", "180", "-png"]
+    if max_pages:
+        command.extend(["-f", "1", "-l", str(max_pages)])
+    command.extend([str(pdf_path), str(prefix)])
     subprocess.run(
-        [poppler, "-r", "180", "-png", str(pdf_path), str(prefix)],
+        command,
         check=True, capture_output=True,
     )
     ocr = RapidOCR()
@@ -175,6 +194,8 @@ def redact_text(text: str) -> str:
     # 公开项目名称也可反向定位主体；评测只需要条款结构，故统一泛化。
     text = re.sub(r"《[^》]{0,140}(?:项目|合同)[^》]{0,80}》", "《附件技术需求》", text)
     text = re.sub(r"甲方A\s*\d{4}[^。\n]{0,80}(?:项目|合同)", "甲方A项目", text)
+    # 正文中的场所简称可能未出现在“甲方：”字段中，无法被主体名称收集规则命中。
+    text = re.sub(r"(?:全国)?海关信息中心(?:综合楼)?", "甲方指定服务场所内", text)
 
     # PDF 提取常造成大量空行，规整后更适合作为 RAG 输入。
     lines = [line.strip() for line in text.splitlines()]
@@ -200,19 +221,31 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--ids", nargs="*", help="只处理指定样本 id")
     parser.add_argument("--max-pages", type=int, help="扫描 PDF 最多 OCR 的页数")
+    parser.add_argument(
+        "--from-raw", action="store_true",
+        help="使用 tmp/pdfs/public_contracts 中已下载的 PDF，跳过网页请求",
+    )
     args = parser.parse_args()
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     RAW_DIR.mkdir(parents=True, exist_ok=True)
-    manifest = []
-    failures = []
+    sources_path = OUT_DIR / "sources.json"
+    previous = json.loads(sources_path.read_text(encoding="utf-8")) if sources_path.exists() else {}
+    manifest_by_id = {item["id"]: item for item in previous.get("samples", [])}
+    failures_by_id = {item["id"]: item for item in previous.get("failures", [])}
 
     selected = [s for s in SOURCES if not args.ids or s[0] in args.ids]
     for sample_id, contract_type, source_url in selected:
         try:
-            page = fetch(source_url).decode("utf-8", errors="replace")
-            pdf_url = download_url(page)
             raw_path = RAW_DIR / f"{sample_id}.pdf"
-            raw_path.write_bytes(fetch(pdf_url, referer=source_url))
+            if args.from_raw:
+                if not raw_path.exists():
+                    raise FileNotFoundError(f"缺少已下载附件：{raw_path}")
+                title = "公开合同公告"
+            else:
+                page = fetch(source_url).decode("utf-8", errors="replace")
+                pdf_url = download_url(page)
+                raw_path.write_bytes(fetch(pdf_url, referer=source_url))
+                title = page_title(page)
             extracted = extract_pdf_text(raw_path, max_pages=args.max_pages)
             if len(extracted) < 800:
                 raise ValueError(f"PDF 可提取文本过少（{len(extracted)} 字符），疑似扫描件或下载异常")
@@ -228,28 +261,38 @@ def main() -> None:
                 "# 公开来源链接仅用于可追溯核验，不应随面向最终用户的语料库一同暴露。\n\n"
             )
             out_path.write_text(header + redacted, encoding="utf-8")
-            manifest.append({
+            manifest_by_id[sample_id] = {
                 "id": sample_id,
                 "contract_type": contract_type,
                 "source": "中国政府采购网（官方公开合同公告）",
                 "source_url": source_url,
-                "title": page_title(page),
+                "title": title,
                 "output": str(out_path.relative_to(PROJECT_ROOT)).replace("\\", "/"),
                 "characters": len(redacted),
                 "redaction": "rule_based_v1 + residual_pattern_check",
                 "review_required": True,
-            })
+            }
+            failures_by_id.pop(sample_id, None)
             print(f"[OK] {sample_id}: {len(redacted)} chars")
         except Exception as exc:  # noqa: BLE001 -- 汇总失败样本，方便替换来源
-            failures.append({"id": sample_id, "source_url": source_url, "error": str(exc)})
+            failures_by_id[sample_id] = {
+                "id": sample_id, "source_url": source_url, "error": str(exc),
+            }
             print(f"[FAIL] {sample_id}: {exc}")
 
-    (OUT_DIR / "sources.json").write_text(
+    manifest = sorted(manifest_by_id.values(), key=lambda item: item["id"])
+    failures = sorted(failures_by_id.values(), key=lambda item: item["id"])
+    sources_path.write_text(
         json.dumps({"samples": manifest, "failures": failures}, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     if failures:
-        raise SystemExit(f"完成 {len(manifest)}/{len(selected)} 份；失败详情见 sources.json")
+        selected_failures = [item for item in failures if item["id"] in {row[0] for row in selected}]
+        if selected_failures:
+            raise SystemExit(
+                f"本次完成 {len(selected) - len(selected_failures)}/{len(selected)} 份；"
+                "失败详情见 sources.json"
+            )
     # 原始公开 PDF 只作为本次中间产物，成功后立即删除，避免误入版本库。
     shutil.rmtree(RAW_DIR)
     print(f"完成：{len(manifest)} 份脱敏文本写入 {OUT_DIR}")
