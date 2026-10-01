@@ -22,7 +22,7 @@
 ## 系统流程
 
 ~~~text
-Vue 3 → FastAPI ──→ PostgreSQL（会话、任务、Outbox、Trace）
+Vue 3 → FastAPI ──→ PostgreSQL + pgvector（会话、任务、法律版本、向量、Outbox、Trace）
              │
              ├──→ Redis（用户/IP 限流）
              └──→ RabbitMQ → Celery Worker → Agentic RAG → PostgreSQL
@@ -55,13 +55,13 @@ Vue 3 → FastAPI ──→ PostgreSQL（会话、任务、Outbox、Trace）
 | Top-5 金标法条命中 | 51 / 51（100%） |
 | 检索 MRR | 0.485 |
 | Agent 金标法条命中 | 36 / 51（70.6%） |
-| 风险识别 Precision / Recall / F1 | 92.0% / 90.2% / 91.1% |
-| 负样本特异度 / 误报率 | 79.2% / 16.7% |
+| 风险识别 Precision / Recall / F1 | 90.4% / 92.2% / 91.3% |
+| 负样本特异度 / 误报率 | 75.0% / 20.8% |
 | 严格准确率 | 65 / 75（86.7%） |
-| 判定协议遵循率 | 73 / 75（97.3%） |
-| 无效引用 / 无本轮依据引用 | 2 / 3 |
+| 判定协议遵循率 | 71 / 75（94.7%） |
+| 无效引用 / 无本轮依据引用 | 0 / 3 |
 
-错误分析驱动的风险阈值校准把“可以写得更细”与“已出现实质风险信号”分开，并禁止从短条款未展示完整合同内容推断合同缺项。在旧版与新版共同保留的 5 个干净负例上，正确负例由 0 个提升到 4 个；扩展后的 24 个负例中仍有 4 个误报。完整逐条结果见 [公开条款评测报告](sample_contracts/public_clause_benchmark/eval_report.json)，数据来源与标注边界见 [评测集说明](sample_contracts/public_clause_benchmark/README.md)。
+错误分析驱动的风险阈值校准把“可以写得更细”与“已出现实质风险信号”分开，并禁止从短条款未展示完整合同内容推断合同缺项。本次 pgvector 完整运行的 24 个负例中有 5 个误报；Agent 调用具有非确定性，检索指标用于判断迁移是否退化，分类指标以逐次报告为准。完整逐条结果见 [公开条款评测报告](sample_contracts/public_clause_benchmark/eval_report.json)，数据来源与标注边界见 [评测集说明](sample_contracts/public_clause_benchmark/README.md)。
 
 ### 合成合同回归集
 
@@ -90,7 +90,7 @@ Copy-Item .env.example .env
 docker compose up --build
 ~~~
 
-首次启动会下载约 95 MB 的向量模型并生成索引。完成后打开 http://127.0.0.1:8000。
+首次启动会下载约 95 MB 的向量模型，执行 Alembic 迁移，并把 1,023 条法律语料幂等同步到 pgvector。完成后打开 http://127.0.0.1:8000；若端口已占用，可先设置 `APP_PORT=8001`。
 
 ~~~powershell
 docker compose up -d        # 后台启动
@@ -131,7 +131,7 @@ npm run dev
 | 异步任务 | RabbitMQ、Celery、Transactional Outbox、任务租约与幂等消费 |
 | 限流与观测 | Redis、Prometheus、JSON Structured Logging |
 | Agent | OpenAI-compatible Function Calling、DeepSeek API |
-| 检索 | FAISS、bge-small-zh-v1.5、BM25、jieba、RRF |
+| 检索 | pgvector 精确余弦检索、bge-small-zh-v1.5、BM25、jieba、RRF；FAISS 仅作本地回归对照 |
 | 可选精排 | BAAI/bge-reranker-base |
 | 安全 | Argon2、JWT、证据白名单、HTML 转义 |
 
@@ -156,10 +156,10 @@ docker/                 容器启动脚本
 
 ## 语料与限制
 
-本地语料包含 8 部法律及司法解释，共 1023 个法条块，覆盖《民法典》合同编、合同编通则解释、买卖合同解释，以及劳动和社会保险相关法律。
+本地语料包含 8 部法律及司法解释，共 1,023 个法条块，覆盖《民法典》合同编、合同编通则解释、买卖合同解释，以及劳动和社会保险相关法律。法律文件、修订版本、效力状态、生效日期、法条元数据和 512 维向量统一存储在 PostgreSQL；当前规模采用精确余弦检索，未创建 HNSW/IVFFlat 近似索引。
 
 - 不含案例库、地方性法规、部门规章和跨法域材料。
-- 法律更新需要人工同步语料并重建索引。
+- 法律更新需要人工同步源文件并执行 `python -m backend.scripts.sync_legal_corpus`；同步按稳定 `chunk_key` 幂等更新。
 - 扫描版 PDF 暂不支持 OCR，需要先转换为可提取文本。
 - 复杂事实认定、争议策略和最终法律意见仍需专业人员判断。
 
@@ -175,6 +175,10 @@ python -m pytest
 
 # 查看迁移状态
 python -m alembic current
+
+# 校验/幂等同步 PostgreSQL 法律语料
+python -m backend.scripts.sync_legal_corpus --check
+python -m backend.scripts.sync_legal_corpus
 
 # 公开条款检索评测；添加 --agent 执行真实端到端评测
 python -X utf8 -m backend.scripts.eval_public_clauses
