@@ -1,4 +1,4 @@
-from backend.scripts.eval_public_clauses import parse_risk_decision, summarize_risk
+from backend.scripts.eval_public_clauses import load, parse_risk_decision, summarize_risk
 
 
 def test_parse_risk_decision_requires_protocol_first_line():
@@ -31,3 +31,15 @@ def test_summarize_risk_reports_confusion_matrix_and_f1():
     assert summary["false_positive_rate"] == 1 / 3
     assert summary["f1"] == 0.5
     assert summary["accuracy"] == 0.4
+
+
+def test_curated_benchmark_has_balanced_scored_labels_without_prompt_leakage():
+    samples = load()
+    positives = [row for row in samples if row["split"] == "positive"]
+    negatives = [row for row in samples if row["split"] == "negative_curated"]
+    excluded = [row for row in samples if row["split"] == "exclude"]
+
+    assert (len(positives), len(negatives), len(excluded)) == (51, 24, 20)
+    assert all(row["gold_articles"] for row in positives)
+    assert all(not row["gold_articles"] for row in negatives)
+    assert all("agent_prompt" not in row for row in positives + negatives)

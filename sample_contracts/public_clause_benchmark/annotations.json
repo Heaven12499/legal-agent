@@ -1,6 +1,7 @@
 {
-  "version": "v0.3-expanded-pending-review",
+  "version": "v0.4-curated-risk-threshold",
   "label_definition": "重点核查需求，不是法律效力或责任的最终结论。",
+  "annotation_limit": "单轮策展标注，不等同于双人律师复核金标。分歧、上下文不足和 OCR 破损样本均排除。",
   "samples": [
     {
       "id": "01_database_maintenance_01_acceptance",
@@ -8,9 +9,9 @@
       "contract_id": "01_database_maintenance",
       "contract_type": "软件维保服务",
       "ocr_review_required": true,
-      "split": "negative_manual_review",
-      "label": "no_obvious_risk_on_text",
-      "reason": "仅从脱敏条款文本未见可直接判定的风险，仍需人工结合合同全文、采购文件和履约事实复核。",
+      "split": "exclude",
+      "label": "exclude_insufficient_context",
+      "reason": "当前摘录不足以区分完整合同缺项与正常交叉引用，保守排除以免制造伪负例。",
       "gold_articles": []
     },
     {
@@ -19,9 +20,9 @@
       "contract_id": "01_database_maintenance",
       "contract_type": "软件维保服务",
       "ocr_review_required": true,
-      "split": "negative_manual_review",
-      "label": "no_obvious_risk_on_text",
-      "reason": "仅从脱敏条款文本未见可直接判定的风险，仍需人工结合合同全文、采购文件和履约事实复核。",
+      "split": "exclude",
+      "label": "exclude_insufficient_context",
+      "reason": "当前摘录不足以区分完整合同缺项与正常交叉引用，保守排除以免制造伪负例。",
       "gold_articles": []
     },
     {
@@ -66,7 +67,7 @@
         ]
       ],
       "query": "未支付价款 报酬 金钱债务 违约责任",
-      "agent_prompt": "请审查以下付款条款中“财政资金不到位或集中支付延误时不承担违约责任”的约定是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "02_unified_communications_03_liability",
@@ -85,9 +86,9 @@
       "contract_id": "03_middleware_maintenance",
       "contract_type": "中间件维保服务",
       "ocr_review_required": true,
-      "split": "negative_manual_review",
-      "label": "no_obvious_risk_on_text",
-      "reason": "仅从脱敏条款文本未见可直接判定的风险，仍需人工结合合同全文、采购文件和履约事实复核。",
+      "split": "exclude",
+      "label": "exclude_insufficient_context",
+      "reason": "当前摘录不足以区分完整合同缺项与正常交叉引用，保守排除以免制造伪负例。",
       "gold_articles": []
     },
     {
@@ -96,9 +97,9 @@
       "contract_id": "03_middleware_maintenance",
       "contract_type": "中间件维保服务",
       "ocr_review_required": true,
-      "split": "negative_manual_review",
-      "label": "no_obvious_risk_on_text",
-      "reason": "仅从脱敏条款文本未见可直接判定的风险，仍需人工结合合同全文、采购文件和履约事实复核。",
+      "split": "exclude",
+      "label": "exclude_insufficient_context",
+      "reason": "当前摘录不足以区分完整合同缺项与正常交叉引用，保守排除以免制造伪负例。",
       "gold_articles": []
     },
     {
@@ -118,10 +119,11 @@
       "contract_id": "04_middleware_support",
       "contract_type": "技术支持服务",
       "ocr_review_required": true,
-      "split": "negative_manual_review",
+      "split": "negative_curated",
       "label": "no_obvious_risk_on_text",
-      "reason": "仅从脱敏条款文本未见可直接判定的风险，仍需人工结合合同全文、采购文件和履约事实复核。",
-      "gold_articles": []
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
+      "gold_articles": [],
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "04_middleware_support_02_payment",
@@ -143,7 +145,7 @@
         ]
       ],
       "query": "未支付价款 报酬 金钱债务 违约责任",
-      "agent_prompt": "请审查以下付款条款中“财政资金不到位或集中支付延误时不承担违约责任”的约定是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "04_middleware_support_03_liability",
@@ -162,9 +164,9 @@
       "contract_id": "05_system_upgrade",
       "contract_type": "信息系统升级服务",
       "ocr_review_required": true,
-      "split": "negative_manual_review",
-      "label": "no_obvious_risk_on_text",
-      "reason": "仅从脱敏条款文本未见可直接判定的风险，仍需人工结合合同全文、采购文件和履约事实复核。",
+      "split": "exclude",
+      "label": "exclude_insufficient_context",
+      "reason": "当前摘录不足以区分完整合同缺项与正常交叉引用，保守排除以免制造伪负例。",
       "gold_articles": []
     },
     {
@@ -187,7 +189,7 @@
         ]
       ],
       "query": "未支付价款 报酬 金钱债务 违约责任",
-      "agent_prompt": "请审查以下付款条款中“财政资金不到位或集中支付延误时不承担违约责任”的约定是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "05_system_upgrade_03_liability",
@@ -206,9 +208,9 @@
       "contract_id": "06_system_optimization",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "negative_manual_review",
-      "label": "no_obvious_risk_on_text",
-      "reason": "仅从脱敏条款文本未见可直接判定的风险，仍需人工结合合同全文、采购文件和履约事实复核。",
+      "split": "exclude",
+      "label": "exclude_insufficient_context",
+      "reason": "当前摘录不足以区分完整合同缺项与正常交叉引用，保守排除以免制造伪负例。",
       "gold_articles": []
     },
     {
@@ -231,7 +233,7 @@
         ]
       ],
       "query": "未支付价款 报酬 金钱债务 违约责任",
-      "agent_prompt": "请审查以下付款条款中“财政资金不到位或集中支付延误时不承担违约责任”的约定是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "06_system_optimization_03_liability",
@@ -264,7 +266,7 @@
         ]
       ],
       "query": "未支付价款 报酬 金钱债务 违约责任",
-      "agent_prompt": "请审查以下付款条款中“财政资金不到位或集中支付延误时不承担违约责任”的约定是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "07_terminal_procurement_02_payment",
@@ -272,10 +274,11 @@
       "contract_id": "07_terminal_procurement",
       "contract_type": "IT 设备采购",
       "ocr_review_required": true,
-      "split": "negative_manual_review",
+      "split": "negative_curated",
       "label": "no_obvious_risk_on_text",
-      "reason": "仅从脱敏条款文本未见可直接判定的风险，仍需人工结合合同全文、采购文件和履约事实复核。",
-      "gold_articles": []
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
+      "gold_articles": [],
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "07_terminal_procurement_03_liability",
@@ -294,10 +297,21 @@
       "contract_id": "08_ntp_procurement",
       "contract_type": "网络设备采购",
       "ocr_review_required": true,
-      "split": "negative_manual_review",
-      "label": "no_obvious_risk_on_text",
-      "reason": "仅从脱敏条款文本未见可直接判定的风险，仍需人工结合合同全文、采购文件和履约事实复核。",
-      "gold_articles": []
+      "split": "positive",
+      "label": "needs_fact_review_payment_exemption",
+      "reason": "付款迟延时免除一方违约责任的约定，需要结合付款条件、原因与适用采购规则核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          577
+        ],
+        [
+          "民法典（合同编）",
+          579
+        ]
+      ],
+      "query": "未支付价款 报酬 金钱债务 违约责任",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "08_ntp_procurement_02_payment",
@@ -305,10 +319,11 @@
       "contract_id": "08_ntp_procurement",
       "contract_type": "网络设备采购",
       "ocr_review_required": true,
-      "split": "negative_manual_review",
+      "split": "negative_curated",
       "label": "no_obvious_risk_on_text",
-      "reason": "仅从脱敏条款文本未见可直接判定的风险，仍需人工结合合同全文、采购文件和履约事实复核。",
-      "gold_articles": []
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
+      "gold_articles": [],
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "08_ntp_procurement_03_liability",
@@ -327,10 +342,11 @@
       "contract_id": "09_facility_repair",
       "contract_type": "维修工程",
       "ocr_review_required": true,
-      "split": "negative_manual_review",
+      "split": "negative_curated",
       "label": "no_obvious_risk_on_text",
-      "reason": "仅从脱敏条款文本未见可直接判定的风险，仍需人工结合合同全文、采购文件和履约事实复核。",
-      "gold_articles": []
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
+      "gold_articles": [],
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "09_facility_repair_02_payment",
@@ -338,10 +354,11 @@
       "contract_id": "09_facility_repair",
       "contract_type": "维修工程",
       "ocr_review_required": true,
-      "split": "negative_manual_review",
+      "split": "negative_curated",
       "label": "no_obvious_risk_on_text",
-      "reason": "仅从脱敏条款文本未见可直接判定的风险，仍需人工结合合同全文、采购文件和履约事实复核。",
-      "gold_articles": []
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
+      "gold_articles": [],
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "09_facility_repair_03_liability",
@@ -360,9 +377,9 @@
       "contract_id": "10_cost_consulting",
       "contract_type": "工程造价咨询服务",
       "ocr_review_required": true,
-      "split": "negative_manual_review",
-      "label": "no_obvious_risk_on_text",
-      "reason": "仅从脱敏条款文本未见可直接判定的风险，仍需人工结合合同全文、采购文件和履约事实复核。",
+      "split": "exclude",
+      "label": "exclude_insufficient_context",
+      "reason": "当前摘录不足以区分完整合同缺项与正常交叉引用，保守排除以免制造伪负例。",
       "gold_articles": []
     },
     {
@@ -371,11 +388,11 @@
       "contract_id": "11_accounting_platform",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "11_accounting_platform_02_payment",
@@ -383,11 +400,10 @@
       "contract_id": "11_accounting_platform",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "exclude",
+      "label": "exclude_insufficient_context",
+      "reason": "当前摘录不足以区分完整合同缺项与正常交叉引用，保守排除以免制造伪负例。",
+      "gold_articles": []
     },
     {
       "id": "11_accounting_platform_03_liability",
@@ -395,11 +411,17 @@
       "contract_id": "11_accounting_platform",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_penalty",
+      "reason": "条款包含按日或按总价计收的违约金、责任叠加或明显不对等，需要结合实际损失等事实核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          585
+        ]
+      ],
+      "query": "违约金 过分高于损失 调整",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "12_medical_equipment_01_acceptance",
@@ -407,11 +429,11 @@
       "contract_id": "12_medical_equipment",
       "contract_type": "医疗设备采购",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "12_medical_equipment_02_payment",
@@ -419,11 +441,10 @@
       "contract_id": "12_medical_equipment",
       "contract_type": "医疗设备采购",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "exclude",
+      "label": "exclude_ocr_noise",
+      "reason": "条款主体或语义被 OCR 水印/缺字破坏，不能作为可信评测样本。",
+      "gold_articles": []
     },
     {
       "id": "13_desktop_cloud_01_acceptance",
@@ -431,11 +452,10 @@
       "contract_id": "13_desktop_cloud",
       "contract_type": "信息技术运维服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "exclude",
+      "label": "exclude_insufficient_context",
+      "reason": "当前摘录不足以区分完整合同缺项与正常交叉引用，保守排除以免制造伪负例。",
+      "gold_articles": []
     },
     {
       "id": "13_desktop_cloud_02_payment",
@@ -443,11 +463,21 @@
       "contract_id": "13_desktop_cloud",
       "contract_type": "信息技术运维服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_payment_exemption",
+      "reason": "付款迟延时免除一方违约责任的约定，需要结合付款条件、原因与适用采购规则核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          577
+        ],
+        [
+          "民法典（合同编）",
+          579
+        ]
+      ],
+      "query": "未支付价款 报酬 金钱债务 违约责任",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "13_desktop_cloud_03_liability",
@@ -455,11 +485,17 @@
       "contract_id": "13_desktop_cloud",
       "contract_type": "信息技术运维服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_penalty",
+      "reason": "条款包含按日或按总价计收的违约金、责任叠加或明显不对等，需要结合实际损失等事实核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          585
+        ]
+      ],
+      "query": "违约金 过分高于损失 调整",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "14_software_outsourcing_01_payment",
@@ -467,11 +503,17 @@
       "contract_id": "14_software_outsourcing",
       "contract_type": "软件人力外包服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_penalty",
+      "reason": "条款包含按日或按总价计收的违约金、责任叠加或明显不对等，需要结合实际损失等事实核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          585
+        ]
+      ],
+      "query": "违约金 过分高于损失 调整",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "14_software_outsourcing_02_liability",
@@ -479,11 +521,21 @@
       "contract_id": "14_software_outsourcing",
       "contract_type": "软件人力外包服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_payment_exemption",
+      "reason": "付款迟延时免除一方违约责任的约定，需要结合付款条件、原因与适用采购规则核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          577
+        ],
+        [
+          "民法典（合同编）",
+          579
+        ]
+      ],
+      "query": "未支付价款 报酬 金钱债务 违约责任",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "14_software_outsourcing_03_保密",
@@ -491,11 +543,11 @@
       "contract_id": "14_software_outsourcing",
       "contract_type": "软件人力外包服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "15_customs_system_development_01_acceptance",
@@ -503,11 +555,11 @@
       "contract_id": "15_customs_system_development",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "15_customs_system_development_02_payment",
@@ -515,11 +567,21 @@
       "contract_id": "15_customs_system_development",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_payment_exemption",
+      "reason": "付款迟延时免除一方违约责任的约定，需要结合付款条件、原因与适用采购规则核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          577
+        ],
+        [
+          "民法典（合同编）",
+          579
+        ]
+      ],
+      "query": "未支付价款 报酬 金钱债务 违约责任",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "15_customs_system_development_03_liability",
@@ -527,11 +589,17 @@
       "contract_id": "15_customs_system_development",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_penalty",
+      "reason": "条款包含按日或按总价计收的违约金、责任叠加或明显不对等，需要结合实际损失等事实核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          585
+        ]
+      ],
+      "query": "违约金 过分高于损失 调整",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "16_customs_validation_01_acceptance",
@@ -539,11 +607,11 @@
       "contract_id": "16_customs_validation",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "16_customs_validation_02_payment",
@@ -551,11 +619,11 @@
       "contract_id": "16_customs_validation",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "16_customs_validation_03_liability",
@@ -563,11 +631,21 @@
       "contract_id": "16_customs_validation",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_payment_exemption",
+      "reason": "付款迟延时免除一方违约责任的约定，需要结合付款条件、原因与适用采购规则核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          577
+        ],
+        [
+          "民法典（合同编）",
+          579
+        ]
+      ],
+      "query": "未支付价款 报酬 金钱债务 违约责任",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "17_on_site_service_01_acceptance",
@@ -575,11 +653,11 @@
       "contract_id": "17_on_site_service",
       "contract_type": "驻场服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "17_on_site_service_02_payment",
@@ -587,11 +665,21 @@
       "contract_id": "17_on_site_service",
       "contract_type": "驻场服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_payment_exemption",
+      "reason": "付款迟延时免除一方违约责任的约定，需要结合付款条件、原因与适用采购规则核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          577
+        ],
+        [
+          "民法典（合同编）",
+          579
+        ]
+      ],
+      "query": "未支付价款 报酬 金钱债务 违约责任",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "17_on_site_service_03_liability",
@@ -599,11 +687,17 @@
       "contract_id": "17_on_site_service",
       "contract_type": "驻场服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_penalty",
+      "reason": "条款包含按日或按总价计收的违约金、责任叠加或明显不对等，需要结合实际损失等事实核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          585
+        ]
+      ],
+      "query": "违约金 过分高于损失 调整",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "18_architecture_compliance_01_acceptance",
@@ -611,11 +705,11 @@
       "contract_id": "18_architecture_compliance",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "18_architecture_compliance_02_payment",
@@ -623,11 +717,21 @@
       "contract_id": "18_architecture_compliance",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_payment_exemption",
+      "reason": "付款迟延时免除一方违约责任的约定，需要结合付款条件、原因与适用采购规则核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          577
+        ],
+        [
+          "民法典（合同编）",
+          579
+        ]
+      ],
+      "query": "未支付价款 报酬 金钱债务 违约责任",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "18_architecture_compliance_03_liability",
@@ -635,11 +739,17 @@
       "contract_id": "18_architecture_compliance",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_penalty",
+      "reason": "条款包含按日或按总价计收的违约金、责任叠加或明显不对等，需要结合实际损失等事实核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          585
+        ]
+      ],
+      "query": "违约金 过分高于损失 调整",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "19_image_recognition_01_acceptance",
@@ -647,11 +757,11 @@
       "contract_id": "19_image_recognition",
       "contract_type": "人工智能技术服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "19_image_recognition_02_payment",
@@ -659,11 +769,11 @@
       "contract_id": "19_image_recognition",
       "contract_type": "人工智能技术服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "19_image_recognition_03_liability",
@@ -671,11 +781,21 @@
       "contract_id": "19_image_recognition",
       "contract_type": "人工智能技术服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_payment_exemption",
+      "reason": "付款迟延时免除一方违约责任的约定，需要结合付款条件、原因与适用采购规则核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          577
+        ],
+        [
+          "民法典（合同编）",
+          579
+        ]
+      ],
+      "query": "未支付价款 报酬 金钱债务 违约责任",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "20_express_clearance_01_acceptance",
@@ -683,11 +803,11 @@
       "contract_id": "20_express_clearance",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "20_express_clearance_02_payment",
@@ -695,11 +815,11 @@
       "contract_id": "20_express_clearance",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "20_express_clearance_03_liability",
@@ -707,11 +827,17 @@
       "contract_id": "20_express_clearance",
       "contract_type": "软件开发服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_penalty",
+      "reason": "条款包含按日或按总价计收的违约金、责任叠加或明显不对等，需要结合实际损失等事实核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          585
+        ]
+      ],
+      "query": "违约金 过分高于损失 调整",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "21_food_supply_01_acceptance",
@@ -719,11 +845,17 @@
       "contract_id": "21_food_supply",
       "contract_type": "食材采购配送",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_penalty",
+      "reason": "条款包含按日或按总价计收的违约金、责任叠加或明显不对等，需要结合实际损失等事实核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          585
+        ]
+      ],
+      "query": "违约金 过分高于损失 调整",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "22_museum_repair_01_acceptance",
@@ -731,11 +863,11 @@
       "contract_id": "22_museum_repair",
       "contract_type": "维修工程",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "22_museum_repair_02_payment",
@@ -743,11 +875,21 @@
       "contract_id": "22_museum_repair",
       "contract_type": "维修工程",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_payment_exemption",
+      "reason": "付款迟延时免除一方违约责任的约定，需要结合付款条件、原因与适用采购规则核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          577
+        ],
+        [
+          "民法典（合同编）",
+          579
+        ]
+      ],
+      "query": "未支付价款 报酬 金钱债务 违约责任",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "22_museum_repair_03_liability",
@@ -755,11 +897,17 @@
       "contract_id": "22_museum_repair",
       "contract_type": "维修工程",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_penalty",
+      "reason": "条款包含按日或按总价计收的违约金、责任叠加或明显不对等，需要结合实际损失等事实核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          585
+        ]
+      ],
+      "query": "违约金 过分高于损失 调整",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "23_laboratory_equipment_01_acceptance",
@@ -767,11 +915,11 @@
       "contract_id": "23_laboratory_equipment",
       "contract_type": "实验室设备采购",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "23_laboratory_equipment_02_payment",
@@ -779,11 +927,21 @@
       "contract_id": "23_laboratory_equipment",
       "contract_type": "实验室设备采购",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_payment_exemption",
+      "reason": "付款迟延时免除一方违约责任的约定，需要结合付款条件、原因与适用采购规则核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          577
+        ],
+        [
+          "民法典（合同编）",
+          579
+        ]
+      ],
+      "query": "未支付价款 报酬 金钱债务 违约责任",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "23_laboratory_equipment_03_liability",
@@ -791,11 +949,11 @@
       "contract_id": "23_laboratory_equipment",
       "contract_type": "实验室设备采购",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "24_building_inspection_01_payment",
@@ -803,11 +961,11 @@
       "contract_id": "24_building_inspection",
       "contract_type": "房屋安全鉴定服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "24_building_inspection_02_liability",
@@ -815,11 +973,11 @@
       "contract_id": "24_building_inspection",
       "contract_type": "房屋安全鉴定服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "24_building_inspection_03_保密",
@@ -827,11 +985,11 @@
       "contract_id": "24_building_inspection",
       "contract_type": "房屋安全鉴定服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "25_open_source_support_01_acceptance",
@@ -839,11 +997,11 @@
       "contract_id": "25_open_source_support",
       "contract_type": "信息技术运维服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
+      "split": "negative_curated",
+      "label": "no_obvious_risk_on_text",
+      "reason": "当前文本为常规履约、价款、验收或保密安排，未见可定位的实质风险信号；可优化不等于需重点核查。",
       "gold_articles": [],
-      "annotation_status": "pending"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "25_open_source_support_02_payment",
@@ -851,11 +1009,21 @@
       "contract_id": "25_open_source_support",
       "contract_type": "信息技术运维服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_payment_exemption",
+      "reason": "付款迟延时免除一方违约责任的约定，需要结合付款条件、原因与适用采购规则核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          577
+        ],
+        [
+          "民法典（合同编）",
+          579
+        ]
+      ],
+      "query": "未支付价款 报酬 金钱债务 违约责任",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "25_open_source_support_03_liability",
@@ -863,11 +1031,17 @@
       "contract_id": "25_open_source_support",
       "contract_type": "信息技术运维服务",
       "ocr_review_required": true,
-      "split": "pending_review",
-      "label": "pending_human_review",
-      "reason": "扩展集新增条款；完成独立人工复核前不进入准确率、召回率或 F1 统计。",
-      "gold_articles": [],
-      "annotation_status": "pending"
+      "split": "positive",
+      "label": "needs_fact_review_penalty",
+      "reason": "条款包含按日或按总价计收的违约金、责任叠加或明显不对等，需要结合实际损失等事实核查。",
+      "gold_articles": [
+        [
+          "民法典（合同编）",
+          585
+        ]
+      ],
+      "query": "违约金 过分高于损失 调整",
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "01_database_maintenance_03_liability_p1",
@@ -888,7 +1062,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "01_database_maintenance_03_liability_p2",
@@ -909,7 +1083,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "01_database_maintenance_03_liability_p3",
@@ -930,7 +1104,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "03_middleware_maintenance_03_liability_p1",
@@ -951,7 +1125,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "03_middleware_maintenance_03_liability_p2",
@@ -972,7 +1146,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "03_middleware_maintenance_03_liability_p3",
@@ -993,7 +1167,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "04_middleware_support_03_liability_p1",
@@ -1014,7 +1188,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "04_middleware_support_03_liability_p2",
@@ -1035,7 +1209,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "04_middleware_support_03_liability_p3",
@@ -1056,7 +1230,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "04_middleware_support_03_liability_p4",
@@ -1077,7 +1251,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "05_system_upgrade_03_liability_p1",
@@ -1098,7 +1272,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "05_system_upgrade_03_liability_p2",
@@ -1119,7 +1293,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "05_system_upgrade_03_liability_p3",
@@ -1140,7 +1314,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "05_system_upgrade_03_liability_p4",
@@ -1161,7 +1335,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "06_system_optimization_03_liability_p1",
@@ -1182,7 +1356,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "06_system_optimization_03_liability_p2",
@@ -1203,7 +1377,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "06_system_optimization_03_liability_p3",
@@ -1224,7 +1398,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "06_system_optimization_03_liability_p4",
@@ -1245,7 +1419,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "07_terminal_procurement_03_liability_p1",
@@ -1266,7 +1440,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "08_ntp_procurement_03_liability_p1",
@@ -1287,7 +1461,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "09_facility_repair_03_liability_p2",
@@ -1308,7 +1482,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "09_facility_repair_03_liability_p3",
@@ -1329,7 +1503,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "09_facility_repair_03_liability_p4",
@@ -1350,7 +1524,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "09_facility_repair_03_liability_p6",
@@ -1371,7 +1545,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     },
     {
       "id": "09_facility_repair_03_liability_p7",
@@ -1392,7 +1566,7 @@
         ]
       ],
       "query": "违约金 过分高于损失 调整",
-      "agent_prompt": "请审查以下合同条款中的违约金和违约责任是否需要重点核查。不得直接认定无效；说明需要结合哪些事实判断，并检索法律依据。"
+      "annotation_status": "single_pass_curated"
     }
   ]
 }

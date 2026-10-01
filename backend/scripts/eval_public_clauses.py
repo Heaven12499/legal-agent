@@ -14,11 +14,14 @@ from backend.app.core.citations import extract_citations
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATASET_DIR = PROJECT_ROOT / "sample_contracts" / "public_clause_benchmark"
-SCORED_SPLITS = {"positive", "negative_manual_review"}
+SCORED_SPLITS = {"positive", "negative_curated"}
 DECISION_INSTRUCTION = (
     "你正在参加固定评测。回答第一行必须且只能是“判定：需重点核查”或"
     "“判定：无明显风险”，之后再说明理由；不得省略第一行。"
+    "只有当前文本出现可定位的实质风险信号时才选“需重点核查”；"
+    "不能仅因条款仍可写得更细、引用的附件未包含在摘录中，或当前片段未展示完整合同的其他条款而报风险。"
 )
+AGENT_TASK = "请仅依据以下条款本身判断是否存在需要重点核查的合同风险，并说明判断依据。"
 
 
 def load() -> list[dict]:
@@ -65,16 +68,12 @@ def agent_eval(samples: list[dict]) -> list[dict]:
     from backend.app.agent.loop import run
 
     rows = []
-    for item in samples:
-        if item["split"] not in SCORED_SPLITS:
-            continue
+    scored = [item for item in samples if item["split"] in SCORED_SPLITS]
+    for index, item in enumerate(scored, start=1):
+        print(f"[agent {index}/{len(scored)}] {item['id']}", flush=True)
         clause = clause_text(item)
-        task_prompt = item.get(
-            "agent_prompt",
-            "请判断以下条款仅依据当前文本是否存在需要重点核查的合同风险，并说明判断依据。",
-        )
         result = run(
-            f"{DECISION_INSTRUCTION}\n\n{task_prompt}",
+            f"{DECISION_INSTRUCTION}\n\n{AGENT_TASK}",
             history=[{"role": "user", "content": f"待审查条款如下：\n\n{clause}"}],
         )
         cited = {(c["law"], c["num"]) for c in extract_citations(result["answer"])}
